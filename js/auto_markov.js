@@ -180,7 +180,7 @@
     const walkers = [];
     const t0 = performance.now();
     for (let k = 0; k < N_WALKERS; k++) {
-      const w = spawn(t0 - Math.random() * STEP_MS);
+      const w = spawn(t0 + Math.random() * STEP_MS);
       walkers.push(w);
     }
 
@@ -191,15 +191,12 @@
     }
 
     function tokenPos(w, now) {
-      if (w.absorbedAt !== null) {
-        return { x: nodeX(w.cur), y: NODE_Y };
-      }
-      const a = Math.min(1, (now - w.stepStart) / STEP_MS);
-      const e = a < 0.5 ? 2 * a * a : 1 - Math.pow(-2 * a + 2, 2) / 2;
       if (w.prev === w.cur) {
         // First step (just spawned): hold at the node.
         return { x: nodeX(w.cur), y: NODE_Y };
       }
+      const a = Math.min(1, (now - w.stepStart) / STEP_MS);
+      const e = a < 0.5 ? 2 * a * a : 1 - Math.pow(-2 * a + 2, 2) / 2;
       const x1 = nodeX(w.prev), x2 = nodeX(w.cur);
       const x = x1 + (x2 - x1) * e;
       const arc = -12 * Math.sin(a * Math.PI);
