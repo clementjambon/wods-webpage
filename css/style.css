@@ -1,0 +1,739 @@
+/* Layout, typography, components. Theme variables live in theme.css. */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---------- Header (minimal, lmattos-style) ---------- */
+header.paper {
+  max-width: var(--reading-width);
+  margin: 0 auto;
+  padding: 56px 24px 0;
+}
+header.paper h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.85rem;
+  line-height: 1.22;
+  letter-spacing: -0.012em;
+  margin: 0 0 10px;
+}
+header.paper .venue {
+  font-style: italic;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 14px;
+}
+header.paper .authors {
+  font-size: 0.98rem;
+  margin-bottom: 4px;
+}
+header.paper .authors a {
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-rule);
+  padding-bottom: 1px;
+}
+header.paper .authors a:hover { border-bottom-color: var(--color-accent); }
+header.paper .affil {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  margin-bottom: 18px;
+}
+header.paper .links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 0.92rem;
+  margin-bottom: 28px;
+}
+header.paper .links a {
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-rule);
+  padding-bottom: 1px;
+}
+header.paper .links a:hover { border-bottom-color: var(--color-accent); }
+header.paper .links a.disabled {
+  color: var(--color-muted, #888);
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+header.paper .teaser {
+  width: 100%;
+  display: block;
+  border-radius: 2px;
+  margin-bottom: 4px;
+}
+header.paper .teaser-caption {
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 8px 2px 0;
+  text-align: justify;
+  hyphens: auto;
+}
+
+header.paper .abstract {
+  margin-top: 20px;
+}
+header.paper .abstract p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+  text-align: justify;
+  hyphens: auto;
+}
+header.paper .abstract-label {
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: 0.02em;
+}
+
+.email-quote {
+  margin: 0 0 18px;
+  padding-left: 14px;
+  border-left: 2px solid var(--color-rule);
+}
+.email-quote p {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+  text-align: justify;
+  hyphens: auto;
+}
+.email-quote .quote-highlight {
+  background: rgba(255, 220, 100, 0.35);
+  color: var(--color-text);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+header.paper .paper-section-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 32px 0 10px;
+}
+header.paper .acknowledgments {
+  font-size: 0.86rem;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: 14px 0 32px;
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* ---------- Article column ---------- */
+article {
+  max-width: var(--reading-width);
+  margin: 0 auto;
+  padding: 40px 24px 96px;
+  border-top: 1px solid var(--color-rule);
+}
+article .byline {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0 0 28px;
+}
+article .byline a {
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+article h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.35rem;
+  letter-spacing: -0.005em;
+  margin: 56px 0 14px;
+}
+article h2 .secnum {
+  color: var(--color-text-muted);
+  font-weight: 400;
+  margin-right: 10px;
+}
+
+article p { margin: 0 0 16px; text-align: justify; hyphens: auto; }
+
+/* Numbered display equations (LaTeX-style \label / \ref). */
+.equation {
+  position: relative;
+  margin: 0 0 16px;
+}
+.equation .eq-num {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+  font-size: 1rem;
+}
+.ref-missing { color: #c0392b; }
+article p.lede { font-size: 1.06rem; }
+
+article a { color: var(--color-accent); text-decoration: none; border-bottom: 1px solid rgba(42,95,184,0.3); }
+article a:hover { border-bottom-color: var(--color-accent); }
+
+blockquote { margin: 0 0 18px; padding: 0; border-left: none; font-style: normal; color: var(--color-text); }
+
+/* Figures escape the reading column */
+.figure { margin: 28px -120px; padding: 0; text-align: center; }
+.figure .figure-body {
+  display: inline-block;
+  text-align: left;
+  max-width: 100%;
+}
+.figure .figure-body:has(.canvas-wrap.wide) { display: block; }
+.figure .canvas-wrap {
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  padding: 16px;
+  display: block;
+  max-width: 100%;
+}
+.figure-caption {
+  text-align: justify;
+  hyphens: auto;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-top: 10px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  width: 0;
+  min-width: 100%;
+}
+.figure-caption b { color: var(--color-text); font-weight: 600; }
+
+/* Canvas + side controls. Canvas is intrinsically sized; controls
+ * fill the remainder. We use flex so the canvas and controls sit
+ * tight against each other instead of grid-stretching the column. */
+.canvas-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.canvas-row .canvas-col {
+  flex: 0 0 auto;
+}
+.canvas-row .controls {
+  flex: 1 1 220px;
+  min-width: 200px;
+  max-width: 280px;
+}
+.canvas-row.solo .controls { display: none; }
+
+.controls { font-size: 0.88rem; }
+.controls label {
+  display: block;
+  margin: 8px 0 4px;
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.controls label:first-child { margin-top: 0; }
+.controls input[type="range"] { width: 100%; }
+
+/* Colormap slider — track is the heatmap gradient, thumb shows the
+ * brush value. Cross-browser styling for WebKit and Firefox. */
+input[type="range"].colormap-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  background: transparent;
+  margin: 6px 0 4px;
+  outline: none;
+}
+input[type="range"].colormap-slider::-webkit-slider-runnable-track {
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid var(--color-rule);
+  background: linear-gradient(to right, var(--hm-low) 0%, var(--hm-mid) 50%, var(--hm-high) 100%);
+}
+input[type="range"].colormap-slider::-moz-range-track {
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid var(--color-rule);
+  background: linear-gradient(to right, var(--hm-low) 0%, var(--hm-mid) 50%, var(--hm-high) 100%);
+}
+input[type="range"].colormap-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 22px;
+  border-radius: 3px;
+  background: #ffffff;
+  border: 1.5px solid var(--color-text);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+  cursor: pointer;
+  margin-top: -4px;
+}
+input[type="range"].colormap-slider::-moz-range-thumb {
+  width: 14px;
+  height: 22px;
+  border-radius: 3px;
+  background: #ffffff;
+  border: 1.5px solid var(--color-text);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+  cursor: pointer;
+}
+/* Plain-track variant — used by the trade-off slider. The track shows
+ * a pale gradient from the "grid-like" end (cool, neumann-tinted) to
+ * the "pure operator" end (warm, interface-tinted). */
+input[type="range"].colormap-slider.plain-slider::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, #e1e6d9 0%, #f5e3cf 100%);
+}
+input[type="range"].colormap-slider.plain-slider::-moz-range-track {
+  background: linear-gradient(to right, #e1e6d9 0%, #f5e3cf 100%);
+}
+input[type="range"].colormap-slider.plain-slider {
+  height: 26px;
+}
+.slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  /* Inset by half the thumb width so endpoint ticks sit under the
+   * thumb's center at min/max, not under the track edge. */
+  margin: -2px 7px 0;
+  pointer-events: none;
+}
+.slider-ticks span {
+  display: block;
+  width: 1px;
+  height: 5px;
+  background: var(--color-text-muted, #888);
+}
+.controls .brush-val {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--color-text);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 6px;
+}
+/* Vertical orientation via 90° rotation: avoids browser inconsistencies
+ * with writing-mode on <input type="range">. The wrapping element
+ * reserves the post-rotation footprint. */
+.colormap-slider-vwrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 80px;
+}
+.colormap-slider-vwrap input[type="range"].colormap-slider {
+  transform: rotate(-90deg);
+  transform-origin: center center;
+  width: 80px;
+  margin: 0;
+}
+.controls .slider-ends {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+/* Pipeline stage slider — sits under the canvas, full width. */
+.pipeline-stage-bar { width: 100%; max-width: 380px; margin: 10px 0 0; }
+.pipeline-stage-bar label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+.pipeline-stage-bar input.stage-slider {
+  width: 100%;
+  /* Neutral track gradient — stage slider is not value-coded */
+  background: transparent;
+}
+.pipeline-stage-bar input.stage-slider::-webkit-slider-runnable-track {
+  background: var(--color-rule);
+}
+.pipeline-stage-bar input.stage-slider::-moz-range-track {
+  background: var(--color-rule);
+}
+.pipeline-stage-bar .stage-tick-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  padding: 0 5px;
+  margin-top: -2px;
+}
+.pipeline-stage-bar .stage-desc {
+  font-size: 0.85rem;
+  color: var(--color-text);
+  margin: 8px 0 0;
+  line-height: 1.45;
+  min-height: 2.6em;
+}
+
+.controls .legend { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; font-size: 0.82rem; }
+.controls .legend span { display: flex; align-items: center; gap: 6px; }
+.controls .legend i { display: inline-block; width: 14px; height: 4px; border-radius: 1px; }
+
+.controls .solver-toggle {
+  display: inline-flex;
+  border: 1px solid var(--color-rule);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+}
+.controls .solver-toggle label {
+  margin: 0;
+  padding: 4px 10px;
+  cursor: pointer;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border-left: 1px solid var(--color-rule);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.controls .solver-toggle label:first-of-type { border-left: none; }
+.controls .solver-toggle input { display: none; }
+.controls .solver-toggle input:checked + span {
+  color: var(--color-text);
+  font-weight: 600;
+}
+.controls .solver-toggle label:has(input:checked) {
+  background: #f4f4f4;
+}
+
+.controls .stat {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  margin: 6px 0;
+  color: var(--color-text);
+}
+
+.controls button, .panel-btn {
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  padding: 6px 10px;
+  border: 1px solid var(--color-rule);
+  background: var(--color-surface);
+  border-radius: 3px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.controls button:hover { background: #f4f4f4; }
+
+.controls .presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.controls .presets button {
+  margin: 0;
+  padding: 3px;
+  line-height: 0;
+  border-radius: 3px;
+}
+.controls .presets button canvas {
+  display: block;
+  border-radius: 2px;
+}
+.controls .presets button:hover { border-color: var(--color-text); }
+
+/* Canvas baseline: NEVER stretch via CSS — the JS sets explicit
+ * pixel width/height. Inline-block prevents block-level expansion. */
+canvas {
+  display: block;
+  background: var(--color-surface);
+  border-radius: 2px;
+  cursor: crosshair;
+  touch-action: none;
+}
+canvas.hist { cursor: default; }
+
+/* Side-by-side panels (Interactive 4) */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.split .panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  padding: 12px;
+}
+.split .panel h4 {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+.split .panel canvas { margin-bottom: 8px; }
+
+/* Pipeline diagram (Section 6) */
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+.pipeline .step {
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  padding: 12px;
+  text-align: center;
+  font-size: 0.82rem;
+}
+.pipeline .step canvas { width: 100%; height: 110px; display: block; margin-bottom: 8px; }
+.pipeline .step b { display: block; font-size: 0.72rem; text-transform: uppercase; color: var(--color-text-muted); letter-spacing: 0.08em; margin-bottom: 4px; }
+
+.pipeline-annot {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 18px;
+  font-size: 0.86rem;
+  color: var(--color-text-muted);
+  margin-top: 18px;
+  padding: 14px 18px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+}
+.pipeline-annot b { color: var(--color-text); }
+
+.katex-display { margin: 14px 0 !important; }
+
+pre.bibtex {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  background: #fafafa;
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  position: relative;
+}
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  font-size: 0.74rem; padding: 4px 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-rule);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+footer {
+  border-top: 1px solid var(--color-rule);
+  padding: 20px 24px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  max-width: var(--reading-width);
+  margin: 32px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+footer .footer-logo {
+  display: inline-flex;
+  border: none;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+footer .footer-logo:hover { opacity: 1; }
+footer .footer-logo img {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+footer a { color: inherit; border-bottom: 1px solid var(--color-rule); }
+
+/* ---------- References (distill-style) ---------- */
+.cite-link {
+  position: relative;
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: none;
+  font-size: 0.78em;
+  vertical-align: super;
+  line-height: 1;
+  padding: 0 1px;
+  white-space: nowrap;
+}
+.cite-link:hover { text-decoration: underline; }
+.cite-link + .cite-link { margin-left: 1px; }
+
+.cite-card {
+  position: fixed;
+  width: min(360px, calc(100vw - 16px));
+  white-space: normal;
+  overflow-wrap: break-word;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.10);
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  vertical-align: baseline;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 50;
+}
+/* Transparent bridge so the cursor can move onto the card without losing hover. */
+.cite-card::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  z-index: -1;
+}
+.cite-link:hover > .cite-card,
+.cite-link:focus > .cite-card,
+.fn-link:hover > .cite-card,
+.fn-link:focus > .cite-card {
+  opacity: 1;
+  pointer-events: auto;
+}
+.cite-card-num {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+.cite-card-title { font-weight: 600; margin-bottom: 2px; }
+.cite-card-title a { color: inherit; border-bottom: 1px solid var(--color-rule); text-decoration: none; }
+.cite-card-meta { color: var(--color-text-muted); font-size: 0.78rem; }
+
+.ref-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+.ref-entry {
+  display: grid;
+  grid-template-columns: 2.4em 1fr;
+  gap: 6px;
+  padding: 6px 0;
+  border-top: 1px solid var(--color-rule);
+}
+.ref-entry:last-child { border-bottom: 1px solid var(--color-rule); }
+.ref-num {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+.ref-body a { color: var(--color-text); border-bottom: 1px solid var(--color-rule); text-decoration: none; }
+.ref-body a:hover { border-bottom-color: var(--color-accent); }
+
+/* Footnote markers — same hover card as citations, distinct color */
+.fn-link {
+  position: relative;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-bottom: none;
+  font-size: 0.78em;
+  vertical-align: super;
+  line-height: 1;
+  padding: 0 1px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fn-link:hover { color: var(--color-accent); }
+.fn-link .cite-card { font-family: var(--font-body); font-size: 0.84rem; }
+.fn-card .cite-card-body { display: block; }
+
+/* Animated absorbing Markov chain figure (auto, non-interactive). */
+/* Inline-with-text figure: don't escape the reading column. */
+#amc-anim.figure { margin-left: 0; margin-right: 0; }
+#amc-anim .figure-body { display: block; }
+#amc-anim .canvas-wrap { display: block; }
+
+.amc-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 760 / 200;
+  margin: 0 auto;
+}
+.amc-stage svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.amc-stage .amc-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 0.78rem;
+  pointer-events: none;
+  color: var(--color-text);
+}
+.amc-legend {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+.amc-legend .amc-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.4px solid var(--color-text);
+  background: var(--color-surface);
+  vertical-align: -3px;
+}
+.amc-legend .amc-swatch--walker {
+  width: 9px;
+  height: 9px;
+  border-width: 1.5px;
+  vertical-align: 0;
+}
+
+/* Responsive */
+@media (max-width: 1080px) {
+  .figure { margin-left: 0; margin-right: 0; }
+}
+@media (max-width: 720px) {
+  .canvas-row { flex-direction: column; }
+  .canvas-row .controls { max-width: none; width: 100%; }
+  #imc .controls { grid-template-columns: 1fr !important; }
+  .split { grid-template-columns: 1fr; }
+  .pipeline { grid-template-columns: 1fr 1fr; }
+  header.paper h1 { font-size: 1.45rem; }
+  article { padding: 16px 18px 64px; }
+  header.paper { padding: 32px 18px 0; }
+}

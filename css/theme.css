@@ -1,0 +1,37 @@
+/* ===========================================================
+ * Global theme — edit here to retune fonts/colors site-wide.
+ * =========================================================== */
+:root {
+  /* Typography */
+  --font-body: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  --font-size-base: 17px;
+  --line-height-base: 1.65;
+  --reading-width: 720px;
+  --side-margin: 220px; /* room for figure captions */
+
+  /* Palette — clean white background, paper-aligned accents */
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-text: #111111;
+  --color-text-muted: #6b6b6b;
+  --color-rule: #e6e6e6;
+
+  --color-dirichlet: #b8362a;   /* warm */
+  --color-neumann:   #2a5fb8;   /* cool */
+  --color-interface: #e88c30;   /* tile interfaces */
+  --color-tile-grid: #888888;
+  --color-accent:    #2a5fb8;
+  --color-walk:      #1a1a1a;
+
+  /* Heatmap stops (warm/cool diverging, RdBu-ish reversed) */
+  --hm-low:  #2a5fb8;
+  --hm-mid:  #f7f7f4;
+  --hm-high: #b8362a;
+
+  /* UI */
+  --radius: 4px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04);
+}

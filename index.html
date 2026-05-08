@@ -1,0 +1,1185 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Walk on Decomposed Subdomains</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/style.css" />
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+</head>
+
+<body>
+
+  <header class="paper">
+    <h1>Walk on Decomposed Subdomains: A Hybrid Monte Carlo–Deterministic Solver for Elliptic PDEs</h1>
+    <div class="venue"><i>ACM Transactions on Graphics (SIGGRAPH) 2026</i></div>
+    <div class="authors"><a href="https://clementjambon.github.io/" target="_blank" rel="noopener noreferrer">Clément Jambon</a> · <a
+        href="https://sinabiz.github.io/" target="_blank" rel="noopener noreferrer">Mohammad Sina Nabizadeh</a> · <a
+        href="https://people.csail.mit.edu/mina/" target="_blank" rel="noopener noreferrer">Mina Konaković Luković</a></div>
+    <div class="affil">Massachusetts Institute of Technology</div>
+    <div class="links">
+      <a href="refs/wods.pdf" target="_blank" rel="noopener noreferrer">Paper</a>
+      <a href="#bibtex">BibTeX</a>
+      <a href="#blogpost">Blog post</a>
+    </div>
+    <img class="teaser" src="assets/teaser.png" alt="Warehouse scene with streamlines (Fig. 1 of the WoDS paper)" />
+    <div class="abstract">
+      <p><span class="abstract-label">Abstract.</span> Elliptic partial differential equations are ubiquitous in
+        graphics and engineering, but remain challenging to solve on complex or evolving geometries. Traditional
+        discretization schemes (e.g., FEM/FDM) provide stable, globally coupled solutions but require heavy meshing or
+        extreme refinement to accurately resolve geometric detail. In contrast, grid-free Monte Carlo methods (e.g.,
+        Walk on Spheres/Stars) adapt naturally to arbitrary geometry and offer massive parallelism, but rely on long
+        random walks whose variance grows rapidly, particularly in the presence of Neumann boundaries, leading to slow
+        convergence. We introduce a hybrid approach that combines the geometric flexibility of Monte Carlo estimation
+        with deterministic global solves that do not introduce additional stochastic error. Our method decomposes the
+        domain into simple, regular subdomains and uses Monte Carlo to estimate local first-passage solution operators
+        (Poisson kernels), where walk lengths and variance are inherently controlled by the reduced spatial scale. These
+        local operators are assembled into a sparse global system whose solution is obtained via a deterministic linear
+        solve that exactly replaces simulating discrete random walks through the domain. This global solve trades
+        stochastic variance for a fixed, resolution-dependent discretization bias, yielding stable and reusable solution
+        operators. As a result, our method attains accurate, geometry-aware solutions even on coarse discretizations,
+        and enables efficient solves and re-solves by computing and updating only the local operators affected by the
+        geometry and its changes. We evaluate the approach on complex two-dimensional domains, benchmarking accuracy and
+        convergence against standard grid-free and grid-based baselines, and demonstrate applications to microstructure
+        simulation and flow-based path planning and streamline visualization.</p>
+    </div>
+
+    <h2 class="paper-section-heading">Citation</h2>
+
+    <pre class="bibtex" id="bibtex"><button class="copy-btn" data-role="copy-bib">copy</button><code>@article{wods,
+  author     = {Jambon, Cl\'{e}ment and Nabizadeh, Mohammad Sina and Konakovi\'{c} Lukovi\'{c}, Mina},
+  title      = {Walk on Decomposed Subdomains: A Hybrid Monte Carlo–Deterministic Solver for Elliptic PDEs},
+  year       = {2026},
+  issue_date = {July 2026},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {45},
+  number     = {4},
+  url        = {https://doi.org/10.1145/3811340},
+  doi        = {10.1145/3811340},
+  journal    = {ACM Trans. Graph.},
+  month      = jul,
+  articleno  = {132},
+  numpages   = {22}
+}</code></pre>
+
+    <p class="acknowledgments">Acknowledgments: We thank the
+      reviewers for their insightful feedback. We are grateful to Pavle Konaković for his help with the design and
+      rendering of 3D scenes. We thank Rohan Sawhney, Bailey Miller and Hamid Kamkari for valuable discussions. This
+      work was supported
+      by the Wistron Corporation, the Siebel Scholars program and the MIT Generative AI Impact Consortium.</p>
+  </header>
+
+  <article id="blogpost">
+
+    <p class="byline">Blog post by <a href="https://clementjambon.github.io/" target="_blank" rel="noopener noreferrer">Clément Jambon</a>.</p>
+
+    <p><b>Disclaimer:</b> The goal of this blog post is to walk you through the main intuitions and ideas behind our
+      work. To this end,
+      it takes a completely different approach from the exposition in the paper. It also takes a few technical and
+      nonrigorous shortcuts. If you want a more formal treatment, please refer directly to the paper.</p>
+
+    <!-- ===== SECTION 1 ===== -->
+    <h2><span class="secnum">1</span>Elliptic PDEs and Boundary Value Problems</h2>
+
+
+    <p>Many real-world phenomena are governed by elliptic partial differential equations (PDEs): heat conduction,
+      electrostatics, path planning, steady-state potential flow, and more<cite data-key="evans2022partial"></cite>.
+      These are often cast as boundary value
+      problems (BVPs), where values are prescribed on the boundary of a domain and we seek the solution to the PDE in
+      the interior.</p>
+
+    <p>Consider for example the <a href="https://en.wikipedia.org/wiki/Laplace%27s_equation" target="_blank"
+        rel="noopener noreferrer">Laplace equation</a> with Dirichlet boundary conditions:</p>
+
+    <div class="equation" data-label="laplace">
+      $$ \begin{cases} \Delta u = 0 & \text{in } \Omega \\ u = g & \text{on } \partial\Omega_D \end{cases} $$
+    </div>
+
+    <p>Feel free to play with the interactive figure below to get an intuition for what this does:</p>
+
+    <figure class="figure" id="i0">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col"><canvas class="diagram"></canvas></div>
+            <div class="controls">
+              <label>Brush value <span class="brush-val" data-role="brush-val">+1.00</span></label>
+              <input type="range" class="colormap-slider" data-role="brush" min="-1" max="1" step="0.01" value="1" />
+              <div class="slider-ends"><span>−1 (cold)</span><span>+1 (hot)</span></div>
+              <button data-role="reset">Reset boundary</button>
+              <label style="margin-top:14px;">Presets</label>
+              <div class="presets" data-role="presets"></div>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click and paint inside the
+                dashed boundary band to paint Dirichlet values $g$. The interior satisfies $\Delta u=0$.</p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Dirichlet problem.</b> Solving the Laplace equation with Dirichlet boundary
+          conditions on a square.</div>
+      </div>
+    </figure>
+
+    <p>We can make things more interesting by considering more complex geometries and boundary conditions. For example,
+      people are often interested in solving mixed boundary value problems with Neumann boundary conditions<fn>Note that
+        we will restrict ourselves to zero-Neumann conditions.</fn>:</p>
+
+    <div class="equation" data-label="mixed">
+      $$ \begin{cases} \Delta u = 0 & \text{in } \Omega \\ u = g & \text{on } \partial\Omega_D \\ \frac{\partial
+      u}{\partial n} = 0 & \text{on } \partial\Omega_N \end{cases} $$
+    </div>
+
+    <p>The interactive figure below illustrates this. Notice how the isolines bend to meet the zero-Neumann obstacle at
+      right angles to satisfy $\frac{\partial u}{\partial n} = 0$.</p>
+
+    <figure class="figure" id="i0b">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col"><canvas class="diagram"></canvas></div>
+            <div class="controls">
+              <label>Brush value <span class="brush-val" data-role="brush-val">+1.00</span></label>
+              <input type="range" class="colormap-slider" data-role="brush" min="-1" max="1" step="0.01" value="1" />
+              <div class="slider-ends"><span>−1 (cold)</span><span>+1 (hot)</span></div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button data-role="reset">Reset boundary</button>
+                <button data-role="toggle-iso">Hide isolines</button>
+              </div>
+              <label style="margin-top:14px;">Scene</label>
+              <div class="presets" data-role="scene-presets"></div>
+              <label style="margin-top:14px;">Boundary presets</label>
+              <div class="presets" data-role="presets"></div>
+              <div class="legend" style="margin-top:10px;">
+                <span><i style="background:var(--color-dirichlet)"></i> Dirichlet (paint here)</span>
+                <span><i style="background:var(--color-neumann)"></i> Neumann (zero-flux)</span>
+              </div>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click and paint the dashed
+                Dirichlet band as before. The interior obstacle (dashed blue) enforces $\partial u/\partial n = 0$ —
+                isolines bend to meet it at right angles.</p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Mixed problem.</b> Laplace equation with Dirichlet values painted on the outer
+          boundary and zero-Neumann geometry inside.</div>
+      </div>
+    </figure>
+
+    <p>If you look closely, you'll see that the solution is actually "pixelated". This is because it is computed with
+      <a href="https://en.wikipedia.org/wiki/Finite_difference_method" target="_blank" rel="noopener noreferrer">finite
+        differences</a> on a grid. Finite differences are very easy to
+      understand and to implement but they don't deal very well with complex geometries, often requiring extreme grid
+      refinement. Another common alternative is to use <a href="https://en.wikipedia.org/wiki/Finite_element_method"
+        target="_blank" rel="noopener noreferrer">finite elements</a>. The
+      problem is that finite elements require
+      careful mesh generation, which can be particularly challenging and time-consuming for complex geometries<fn>
+        Imagine designing a car and having to regenerate the mesh every time you tweak the design. That would be a
+        nightmare — and it is!
+      </fn>, such as
+      the city shown below.
+    </p>
+
+    <figure class="figure">
+      <div class="figure-body">
+        <img src="assets/city.jpg" alt="" style="width:100%; max-width:672px; height:auto;" />
+        <div class="figure-caption"><b>Wind around a city.</b> This scene contains hundreds of buildings with intricate
+          geometry.
+          Our method characterizes their influence on wind patterns, visualized here as steady-state potential
+          streamlines.</div>
+      </div>
+    </figure>
+
+    <!-- ===== SECTION 2 ===== -->
+    <h2><span class="secnum">2</span>Grid-Free Monte Carlo Methods</h2>
+
+    <p>Luckily, the computer graphics community has recently revived an old idea: grid-free Monte Carlo methods. The
+      canonical algorithm underpinning
+      this approach is the <i>Walk on Spheres</i> (WoS) algorithm<cite
+        data-key="muller1956continuous,sawhney2020mcgp"></cite>.</p>
+
+    <p>The intuition, from stochastic calculus, is that if
+      you were to simulate a <a href="https://en.wikipedia.org/wiki/Brownian_motion" target="_blank" rel="noopener noreferrer">Brownian motion</a> (a continuous
+      random walk) starting from an interior point $x$, it would
+      eventually hit the boundary at some random location $Z_\tau$. The expected value $\mathbb{E}[g(Z_\tau)]$ of the
+      boundary condition at that
+      random
+      location is exactly the solution to the Dirichlet problem given by <a class="ref" data-ref="laplace"></a>.</p>
+
+    <figure class="figure" id="ibrown">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row solo">
+            <div class="canvas-col" style="position:relative;">
+              <canvas class="diagram"></canvas>
+              <div data-role="x-label"
+                style="position:absolute; pointer-events:none; font-size:0.95rem; transform:translate(-50%,-50%); white-space:nowrap; filter:drop-shadow(0 0 2px var(--color-surface)) drop-shadow(0 0 2px var(--color-surface)) drop-shadow(0 0 2px var(--color-surface));">
+              </div>
+              <div data-role="hit-label"
+                style="position:absolute; pointer-events:none; font-size:0.95rem; opacity:0; transition:opacity 120ms; transform:translate(-50%,-50%); white-space:nowrap; filter:drop-shadow(0 0 2px var(--color-surface)) drop-shadow(0 0 2px var(--color-surface)) drop-shadow(0 0 2px var(--color-surface));">
+              </div>
+              <div data-role="eq-label"
+                style="position:absolute; left:50%; bottom:6px; transform:translateX(-50%); font-size:0.95rem; white-space:nowrap;">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Brownian motion and Laplace equation.</b> A particle starts at the interior
+          point $x$ and diffuses until it is absorbed at a random boundary location $Z_\tau$. The boundary is colored
+          by $g$; averaging $g(Z_\tau)$ over many such walks recovers $u(x)$.</div>
+      </div>
+    </figure>
+
+    <p>However, simulating Brownian
+      motion is computationally expensive and often biased<fn>You typically have to discretize it, for example with
+        fixed time
+        steps with <a href="https://en.wikipedia.org/wiki/Euler–Maruyama" target="_blank"
+          rel="noopener noreferrer">Euler–Maruyama</a>.</fn>. The Walk on Spheres algorithm overcomes this by observing that the
+      exit
+      distribution of Brownian motion on a sphere is exactly uniform.
+      This lets us instead hop from one sphere boundary to the next, where each sphere is inscribed in
+      the domain and chosen to be as large as possible to converge faster<fn>Since walks cannot reach the boundary
+        exactly, we introduce a thin $\epsilon$-shell around it where walks are absorbed when they reach it.</fn>.</p>
+
+    <p>The entire process is illustrated in the interactive figure below. For Neumann boundary conditions, it turns out
+      that there is a special variant of WoS called <i>Walk on Stars</i><cite data-key="sawhney2023wost"></cite> (WoSt)
+      <fn>As its name suggests, this method
+        "walks on stars" to better handle Neumann (reflective) boundary conditions. Note that the interactive figure
+        below does not properly visualize these star-shaped domains. Rather, we visualize the "star radius" of the
+        enclosing
+        ball of each star.</fn>
+      . If you're interested in learning more about Monte Carlo methods for PDEs, there's a great course and resources
+      available <a href="https://rohan-sawhney.github.io/mcgp-resources/" target="_blank" rel="noopener noreferrer">here</a><cite
+        data-key="sawhney2025star"></cite>.
+    </p>
+
+    <figure class="figure" id="i1">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col"><canvas class="diagram"></canvas></div>
+            <div class="controls">
+              <label>Solver</label>
+              <div class="solver-toggle" data-role="solver-toggle">
+                <label><input type="radio" name="i1-solver" value="wost" checked><span>WoSt</span></label>
+                <label><input type="radio" name="i1-solver" value="wos"><span>WoS</span></label>
+              </div>
+              <label style="margin-top:14px;">Neumann obstacles: <span data-role="obstacles-label">10</span></label>
+              <input type="range" data-role="obstacles" min="0" max="12" step="1" value="10" />
+              <div class="stat" data-role="avg">Avg steps: —</div>
+              <div class="legend">
+                <span><i style="background:var(--color-dirichlet)"></i> Dirichlet (absorbing)</span>
+                <span><i style="background:var(--color-neumann)"></i> Neumann (reflecting)</span>
+              </div>
+              <label style="margin-top:14px;">Walk-length histogram (log)</label>
+              <canvas class="hist"></canvas>
+              <button data-role="reset">Reset histogram</button>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click anywhere inside to
+                start a walk; many more walks are run in the background to fill the histogram.</p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Walk on Spheres/Stars.</b> Monte Carlo methods proceed recursively by sampling
+          spheres (or stars) until they hit the boundary. When more Neumann obstacles are present, walks get
+          "trapped"
+          and take a long time to hit the boundary, leading to high variance and slow convergence. The histogram shows
+          the distribution of walk lengths; as Neumann obstacles are added, it shifts to the right.
+        </div>
+      </div>
+    </figure>
+
+    <p>Monte Carlo methods are truly magic! However, as you can see by playing with the interactive figure above, random
+      walks take a lot of steps before they hit the boundary. This is particularly true for problems with complex
+      geometries and Neumann-dominated boundaries<fn>Our manuscript showcases a lot of these examples: the warehouse in
+        Figure 1, the city in Figure 4 or the maze in Figure 15.</fn>. The main consequence is variance and slow
+      convergence, which render them quite impractical for scenarios where reliable solutions are required<fn>And I
+        believe this may be why people have been hesitant to adopt these methods in practice.</fn>.</p>
+
+    <p>In our work, we address this issue in two complementary ways<fn>I should add that we're not the first to tackle
+        this problem. There have been many ways of solving it. The key contribution and novelty of our approach is that
+        rather than simply improving the efficiency of Monte Carlo estimators or caching solutions, we propose a way
+        to connect grid-free Monte Carlo methods with deterministic grid-based solvers, and leverage the nice
+        properties of the latter.
+      </fn>
+      . First, as shown in <a class="ref" data-ref="decompose"></a>, we can make
+      walks shorter by decomposing the domain into smaller subdomains. Second, as introduced later in <a class="ref"
+        data-ref="coupling"></a>, we
+      can "kill" variance, at the cost of a (controllable) discretization bias, by coupling all subdomains together with
+      a
+      deterministic solver,
+      recovering the nice "variance-free" properties of deterministic grid-based methods.</p>
+
+    <!-- ===== SECTION 3 ===== -->
+    <h2 data-label="decompose"><span class="secnum">3</span>Divide to Conquer: Shorter Walks</h2>
+
+    <p>
+      When a problem is complicated, the natural solution is to break it down into smaller, more manageable pieces. This
+      is a common strategy in numerical methods: domain decomposition, multigrid, hierarchical matrices, and so on.
+      And this is precisely the path we also followed in our paper.
+    </p>
+
+    <p>First, observe that a beautiful property of $\Delta u = 0$ in <a class="ref" data-ref="laplace"></a> is that this
+      holds
+      everywhere,
+      including on subdomains of
+      the entire domain $\Omega$.
+      As such, a key intuition is that walks can naturally be made shorter by decomposing the domain into smaller
+      subdomains.
+    </p>
+
+    <p>More formally, we propose to decompose the domain into a partition of smaller non-overlapping subdomains
+      $\mathcal{D}=\{\Omega_i\}$, for example regular tiles. On each tile, the Dirichlet boundary is the union of (a)
+      physical Dirichlet pieces
+      inherited from $\partial\Omega_D$ and (b) artificial Dirichlet pieces — the <i>interfaces</i> with neighboring
+      tiles<fn>Note that this decomposition does not require any meshing. Subdomains can be totally arbitrary, are free
+        to intersect Neumann
+        boundaries, and can cover parts outside of the domain $\Omega$.</fn>. Walks within a tile now stop at the tile's
+      boundary as shown in the interactive figure below. Feel free to adjust the tiling resolution and see how it
+      affects walk lengths in the histogram.
+    </p>
+
+    <figure class="figure" id="i2">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col"><canvas class="diagram"></canvas></div>
+            <div class="controls">
+              <label>Solver</label>
+              <div class="solver-toggle" data-role="solver-toggle">
+                <label><input type="radio" name="i2-solver" value="wost" checked><span>WoSt</span></label>
+                <label><input type="radio" name="i2-solver" value="wos"><span>WoS</span></label>
+              </div>
+              <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">1×1</span></label>
+              <input type="range" data-role="tiles" min="1" max="12" step="1" value="6" />
+              <div class="stat" data-role="avg">Avg steps: —</div>
+              <div class="legend">
+                <span><i style="background:var(--color-dirichlet)"></i> "Physical" Dirichlet (absorbing)</span>
+                <span><i style="background:var(--color-interface)"></i> "Artificial" interfaces (absorbing)</span>
+                <span><i style="background:var(--color-neumann)"></i> Neumann (reflecting)</span>
+              </div>
+              <label style="margin-top:14px;">Walk-length histogram (log)</label>
+              <canvas class="hist"></canvas>
+              <button data-role="reset">Reset histogram</button>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Walks terminate at tile
+                interfaces; shrink the tiles and the histogram moves to the left.</p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Walks <i>in</i> Decomposed Subdomains.</b> Rather than executing random walks
+          across the
+          entire domain, we decompose it into smaller subdomains. This leads to much shorter walks with lower variance.
+        </div>
+      </div>
+    </figure>
+
+    <p>This strategy gives us <i>Walks <b>in</b> Decomposed Subdomains</i>. So why does our paper title say <i>Walks
+        <b>on</b> Decomposed Subdomains</i>? There's still some way to go. On their own, these
+      walks don't tell us much
+      yet: we still don't
+      know the values at the interfaces between subdomains.</p>
+
+    <p>This is where the connection to grid-based solvers will come into play. But before that, we need to understand
+      Poisson kernels and solution operators.</p>
+
+    <!-- ===== SECTION 4 ===== -->
+    <h2 data-label="poisson-kernel"><span class="secnum">4</span>Poisson Kernels and Solution Operators</h2>
+
+    <p>Within a single tile $\Omega_i$, <a class="ref" data-ref="laplace"></a> is also satisfied, so knowing the
+      boundary
+      values fully determines
+      the interior solution.
+      Concretely, we can encode this as a linear operator $\mathcal{H}_i$ that maps boundary values to interior values:
+    </p>
+
+    <div class="equation" data-label="H-operator">
+      $$\mathcal{H}_i : \partial\Omega_i \to \Omega_i $$
+    </div>
+
+    <p>In other words, $u(x) = \mathcal{H}_i[u](x)$ for all $x \in \Omega_i$. But how do we get $\mathcal{H}_i$? It's
+      locally the solution of the PDE after all...</p>
+
+    <p>The idea is to observe that $\mathcal{H}_i$ can be written in integral form</p>
+
+    <div class="equation" data-label="poisson-integral">
+      $$ u(x) = \int_{\partial\Omega_i} P_{\Omega_i}(x, z)\, u(z)\, dz $$
+    </div>
+
+    <p>where $P_{\Omega_i}(x, z)$ is called the <i>Poisson kernel</i>. The key observation is that $P_{\Omega_i}(x, z)$
+      is
+      exactly the
+      first-passage probability density of a Brownian motion starting at $x$ and hitting the boundary at $z$. Wait —
+      isn't that precisely what Walk on Spheres computes?</p>
+
+    <p>Exactly, and that gives us an easy recipe to approximate it: for a point $x \in \Omega_i$, we run many random
+      walks from
+      $x$ and bin where they exit on $\partial\Omega_i$. The interactive figure below visualizes the Poisson kernel for
+      various domains tabulated using this strategy.</p>
+
+    <figure class="figure" id="i3">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col"><canvas class="diagram"></canvas></div>
+            <div class="controls">
+              <label>Solver</label>
+              <div class="solver-toggle" data-role="solver-toggle">
+                <label><input type="radio" name="i3-solver" value="wost" checked><span>WoSt</span></label>
+                <label><input type="radio" name="i3-solver" value="wos"><span>WoS</span></label>
+              </div>
+              <label style="margin-top:14px;">Scene</label>
+              <div class="presets" data-role="shape-presets"></div>
+              <div data-role="shape-params" style="margin-top:10px;"></div>
+              <div class="stat" data-role="status" style="margin-top:10px;">Estimating P(x, ·)…</div>
+              <button data-role="recompute">Add more MC samples</button>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Drag $x$ to move the source.
+                Drag the dashed Neumann obstacle to move it; or adjust shape parameters with the sliders.
+                Histograms on the boundary show the Poisson kernel $P(x, z)$, i.e., the first-passage probability
+                density
+                along
+                $\partial\Omega_D$.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Poisson kernel.</b> For a chosen interior source $x$, the
+          histograms along $\partial\Omega_D$ show $P(x, z)$, the first-passage density of a Brownian walk from $x$.
+          The corresponding statistics are estimated in real-time using Monte Carlo.</div>
+      </div>
+    </figure>
+
+    <p>The Poisson kernel has a dual interpretation: instead of fixing $x$ and asking <i>where the walk exits</i>, fix a
+      boundary point $z$ and ask <i>which interior points are most likely to send walks there</i>. In other words, how
+      a unit point source at $z$ on the Dirichlet boundary affects the interior — this is precisely the solution
+      operator!</p>
+
+    <figure class="figure" id="i3b">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col"><canvas class="diagram"></canvas></div>
+            <div class="controls">
+              <label>Solver</label>
+              <div class="solver-toggle" data-role="solver-toggle">
+                <label><input type="radio" name="i3b-solver" value="wost" checked><span>WoSt</span></label>
+                <label><input type="radio" name="i3b-solver" value="wos"><span>WoS</span></label>
+              </div>
+              <label style="margin-top:14px;">Scene</label>
+              <div class="presets" data-role="scene-presets"></div>
+              <label style="margin-top:14px;">Source width: <span data-role="sigma-label">0.10</span></label>
+              <input type="range" data-role="sigma" min="0.03" max="0.30" step="0.005" value="0.10" />
+              <div class="stat" data-role="status" style="margin-top:10px;">Precomputing…</div>
+              <button data-role="recompute">Add more MC samples</button>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Drag $z$ anywhere along
+                $\partial\Omega_D$. The interior is the Poisson kernel $P(\cdot, z)$ — the response to a point source at
+                $z$. The "source width" smooths the source to emphasize the effect.</p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Solution operator.</b> The same kernel
+          $P(x, z)$, viewed in $z$ instead of $x$. For each scene, the kernel matrix is precomputed on-the-fly with
+          Monte
+          Carlo samples;
+          dragging $z$ then queries a column of it instantly.</div>
+      </div>
+    </figure>
+
+    <p>As implied by the interactive figures above, there's a natural and simple way of precomputing and discretizing
+      solution operators as a simple matrix $\mathbf{H}$<fn>Note that we do not claim that this is the most efficient
+        way. There's huge room for improvement here!</fn>. As shown in the figure below, row-wise, $H_{ij}$ represents
+      first-
+      passage probabilities from $x_i$ to the boundary; column-wise, $H_{ij}$ gives the
+      interior response to a unit source at $z_j$.</p>
+
+    <figure class="figure" id="hmatrix-fig">
+      <div class="figure-body">
+        <div class="canvas-wrap" style="display:flex; justify-content:center;">
+          <img src="assets/discrete_solution_operator.svg"
+            alt="Discrete solution operator H mapping a boundary panel containing z_j to interior point x_i"
+            style="width:100%; max-width:420px; height:auto;" />
+        </div>
+        <div class="figure-caption"><b>Discrete solution operator.</b>
+          Discretizing the interior with collocation points $\{x_i\} \subset \Omega$ and the Dirichlet boundary
+          $\partial\Omega_D$ into panels $\{\Gamma_j\}$ with collocation points $\{z_j\}$ yields a matrix
+          $\mathbf{H}$ that approximates the solution operator. Row-wise, $H_{ij}$ is the first-passage
+          probability that a walk launched at $x_i$ exits through panel $\Gamma_j$; column-wise, $H_{ij}$ gives
+          the interior response at $x_i$ to a unit source localized at $z_j$.</div>
+      </div>
+    </figure>
+
+    <p>By tabulating one discrete solution operator $\mathbf{H}_i$ for each tile $\Omega_i$, we can solve the discrete
+      Dirichlet problem within each tile by a simple matrix-vector
+      multiplication. However,
+      this still doesn't tell us how to find the values at the interfaces between tiles. Enter absorbing Markov chains!
+    </p>
+
+    <!-- ===== SECTION 5 ===== -->
+    <h2 data-label="markov"><span class="secnum">5</span>Absorbing Markov Chains</h2>
+
+    <p>An <a href="https://en.wikipedia.org/wiki/Absorbing_Markov_chain" target="_blank" rel="noopener noreferrer">absorbing Markov chain</a> is also a random
+      walk, but this time on a discrete (and finite) set of states
+      $\mathcal{S}$.
+      Some states $\mathcal{T}$ are called <b>transient</b> (the walker may pass through them, possibly many times) and
+      the rest $\mathcal{A}$ are
+      <b>absorbing</b> (once entered, the walker never leaves), such that $\mathcal{S} = \mathcal{T} \sqcup
+      \mathcal{A}$. The figure below provides a simple example.
+    </p>
+
+    <figure class="figure" id="amc-anim">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="amc-stage" data-role="stage"></div>
+        </div>
+        <div class="figure-caption"><b>Absorbing Markov chain.</b> Three transient states
+          $\mathcal{T}=\{t_1,t_2,t_3\}$ sit between two absorbing states $\mathcal{A}=\{a_L,a_R\}$. At each step a
+          walker hops to a random neighbor; the absorbing states carry a self-loop, so once a walker lands there it
+          stays forever.</div>
+      </div>
+    </figure>
+
+    <p>A key observation is that we can also define a boundary value problem on the absorbing Markov chain analogous to
+      <a class="ref" data-ref="laplace"></a>. Concretely, as shown in the interactive example below, we can prescribe
+      values on absorbing states, run walks from transient states until they are absorbed, and average the absorbing
+      values to get a solution defined on the transient states, i.e.,
+      $$u(t) = \mathbb{E}[g(A_\tau) \mid X_0 = t]$$
+      for any transient state $t \in \mathcal{T}$, where $A_\tau \in \mathcal{A}$ is the absorbing state where the
+      walk ends and $g$ holds the prescribed values at absorbing states. This is very reminiscent of the Walk on Spheres
+      algorithm, isn't it?
+    </p>
+
+    <p>The interactive figure below provides an example for a simple Markov chain linking two
+      absorbing endpoints.</p>
+
+    <figure class="figure" id="imc">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:18px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div
+                style="display:flex; flex-direction:column; align-items:center; gap:4px; font-family:var(--font-mono); font-size:0.72rem; color:var(--color-text-muted);">
+                <span>+1</span>
+                <span class="colormap-slider-vwrap">
+                  <input type="range" class="colormap-slider" data-role="gL" min="-1" max="1" step="0.01" value="-1" />
+                </span>
+                <span>−1</span>
+              </div>
+              <div class="canvas-col"><canvas class="diagram"></canvas></div>
+              <div
+                style="display:flex; flex-direction:column; align-items:center; gap:4px; font-family:var(--font-mono); font-size:0.72rem; color:var(--color-text-muted);">
+                <span>+1</span>
+                <span class="colormap-slider-vwrap">
+                  <input type="range" class="colormap-slider" data-role="gR" min="-1" max="1" step="0.01" value="1" />
+                </span>
+                <span>−1</span>
+              </div>
+            </div>
+            <div class="controls"
+              style="display:grid; grid-template-columns: repeat(2, 1fr); gap:24px; align-items:start; max-width:580px; width:100%;">
+              <div style="display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start;">
+                <div class="stat" data-role="status" style="flex-basis:100%;">walks: 0</div>
+                <button data-role="play" style="width:auto;">Run walks</button>
+                <button data-role="step" style="width:auto;">Launch one walk</button>
+                <button data-role="show-exact" style="width:auto;">Show exact solve</button>
+                <button data-role="reset" style="width:auto;">Reset MC</button>
+                <button data-role="reset-bias" style="width:auto;">Reset probabilities</button>
+              </div>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin:0;">Drag the vertical sliders next
+                to each absorbing endpoint to set its boundary value. Click on any transient node to start a walk.
+                Drag the slider beneath each node to change its transition probability. The <b>inner color</b> of
+                each interior circle is the running Monte Carlo estimate. You can launch many walks with "Run
+                walks" or show the exact solution with "Show exact solve".</p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Discrete boundary value problem.</b> By launching walks from transient states and
+          accumulating the values obtained at absorbing states, we can approximate the solution to a discrete
+          boundary value problem.</div>
+      </div>
+    </figure>
+
+    <p>Note how we're absolutely free to choose arbitrary transition probabilities and how they influence the
+      solution<fn>Spoiler: in the next section, we'll choose the geometrically-informed values given by Poisson kernels
+        as transition probabilities!
+      </fn>.</p>
+
+    <p>You may have also noticed that, even with a handful of states, you need to launch quite a few walks before the
+      Monte Carlo estimate stops wiggling around. So here is the natural question: do we really have to <i>simulate</i>
+      random walks?</p>
+
+    <p>Look at any transient state $i$. By the <a href="https://en.wikipedia.org/wiki/Memorylessness" target="_blank" rel="noopener noreferrer">memoryless
+        property</a> of Markov chains, a walker sitting at $i$ takes a single step to a
+      neighbor $j$ with probability $P_{ij}$, and from there the rest of the walk is statistically identical to a
+      fresh walk launched at $j$. In other words, the expected absorbed value at $i$ is just the weighted average of
+      the expected absorbed values at its neighbors:</p>
+
+    <div class="equation">
+      $$ \begin{aligned}
+      u(i) &amp;\;=\; \sum_{j \in \mathcal{S}} P_{ij}\, u(j) &amp;&amp; \text{on } \mathcal{T}, \\
+      u(a) &amp;\;=\; g(a) &amp;&amp; \text{on } \mathcal{A}.
+      \end{aligned} $$
+    </div>
+
+    <p>This is exactly a discrete analog of the Laplace equation <a class="ref" data-ref="laplace"></a>: <i>each
+        interior value is the average of its neighbors</i>, with prescribed values on the boundary<fn>In the continuous
+        case, this mean-value property is locally captured by the Laplacian operator being zero. But note that it also
+        holds in an integral sense as $u(x) = \frac{1}{|\partial B(x, R)|}\int_{\partial B(x, R)} u(z)\,dz$ for a
+        ball centered at $x$ of radius $R$.</fn>.
+      Random walks
+      have quietly disappeared: we're left with a system of linear equations where the unknowns are the transient
+      values.</p>
+
+    <p>To make this concrete, split the transition matrix into transient-to-transient and transient-to-absorbing
+      blocks,</p>
+
+    <div class="equation">
+      $$ \mathbf{P} \;=\; \begin{bmatrix} \mathbf{Q} &amp; \mathbf{R} \\ \mathbf{0} &amp; \mathbf{I} \end{bmatrix}, $$
+    </div>
+
+    <p>and collect the unknown transient values into a vector $\mathbf{u}_{\mathcal{T}}$ and the prescribed absorbing
+      values into $\mathbf{g}$. The averaging identity above becomes
+      $\mathbf{u}_{\mathcal{T}} = \mathbf{Q}\,\mathbf{u}_{\mathcal{T}} + \mathbf{R}\,\mathbf{g}$, i.e.,</p>
+
+    <div class="equation">
+      $$ (\mathbf{I} - \mathbf{Q})\, \mathbf{u}_{\mathcal{T}} \;=\; \mathbf{R}\, \mathbf{g}. $$
+    </div>
+
+    <p>That's it. As long as every walk is eventually absorbed (which it is, with probability one), $\mathbf{I} -
+      \mathbf{Q}$ is invertible, and a single linear solve hands us the <i>exact</i> expected absorbed value at every
+      transient state at once: no sampling, no variance, no waiting for the estimator to settle. Try it in the figure
+      above with "Show exact solve": the colors should snap to their final values immediately!</p>
+
+
+    <p>One last fun thing for the road! It turns out that you can see $\mathbf{I}-\mathbf{P}$ as a random-walk
+      Laplacian<cite data-key="chung1997spectral"></cite>. In 1D, if we choose a symmetric random walk, the
+      corresponding random-walk Laplacian should be very
+      familiar to you: it's exactly the <a
+        href="https://en.wikipedia.org/wiki/Compact_stencil#Three_Point_Stencil_Example" target="_blank"
+        rel="noopener noreferrer">three-point finite difference Laplacian</a> in 1D (up to a scaling factor).</p>
+
+    <figure class="figure" id="rwlap-fig">
+      <div class="figure-body">
+        <div class="canvas-wrap" style="display:flex; justify-content:center;">
+          <svg viewBox="0 0 460 150" style="width:100%; max-width:460px; height:auto;"
+            xmlns="http://www.w3.org/2000/svg">
+            <!-- baseline -->
+            <line x1="40" y1="95" x2="420" y2="95" stroke="#888" stroke-width="1" />
+            <!-- nodes -->
+            <g>
+              <circle cx="80" cy="95" r="6" fill="#bbb" stroke="#444" />
+              <circle cx="160" cy="95" r="6" fill="#bbb" stroke="#444" />
+              <circle cx="230" cy="95" r="7" fill="#e07a5f" stroke="#444" />
+              <circle cx="300" cy="95" r="6" fill="#bbb" stroke="#444" />
+              <circle cx="380" cy="95" r="6" fill="#bbb" stroke="#444" />
+            </g>
+            <!-- arrows: 1/2 left, 1/2 right from node i -->
+            <defs>
+              <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" fill="#2a7" />
+              </marker>
+            </defs>
+            <path d="M222,80 Q195,45 168,80" fill="none" stroke="#2a7" stroke-width="1.6" marker-end="url(#arr)" />
+            <path d="M238,80 Q265,45 292,80" fill="none" stroke="#2a7" stroke-width="1.6" marker-end="url(#arr)" />
+            <!-- node labels (KaTeX) -->
+            <foreignObject x="40" y="106" width="80" height="24">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;justify-content:center;font-size:14px;">
+                $i-2$</div>
+            </foreignObject>
+            <foreignObject x="120" y="106" width="80" height="24">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;justify-content:center;font-size:14px;">
+                $i-1$</div>
+            </foreignObject>
+            <foreignObject x="190" y="106" width="80" height="24">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;justify-content:center;font-size:14px;">$i$
+              </div>
+            </foreignObject>
+            <foreignObject x="260" y="106" width="80" height="24">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;justify-content:center;font-size:14px;">
+                $i+1$</div>
+            </foreignObject>
+            <foreignObject x="340" y="106" width="80" height="24">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;justify-content:center;font-size:14px;">
+                $i+2$</div>
+            </foreignObject>
+            <!-- spacing labels -->
+            <foreignObject x="170" y="128" width="50" height="20">
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                style="display:flex;justify-content:center;font-size:12px;color:#666;">$h$</div>
+            </foreignObject>
+            <foreignObject x="240" y="128" width="50" height="20">
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                style="display:flex;justify-content:center;font-size:12px;color:#666;">$h$</div>
+            </foreignObject>
+            <!-- probability labels -->
+            <foreignObject x="170" y="20" width="50" height="24">
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                style="display:flex;justify-content:center;font-size:14px;color:#2a7;">$\tfrac{1}{2}$</div>
+            </foreignObject>
+            <foreignObject x="240" y="20" width="50" height="24">
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                style="display:flex;justify-content:center;font-size:14px;color:#2a7;">$\tfrac{1}{2}$</div>
+            </foreignObject>
+          </svg>
+        </div>
+        <div class="equation">
+          $$ \big[(\mathbf{I}-\mathbf{P})\,\mathbf{u}\big]_i
+          \;=\; u_i - \tfrac{1}{2}u_{i-1} - \tfrac{1}{2}u_{i+1}
+          \;=\; -\tfrac{h^2}{2}\,\underbrace{\frac{u_{i-1} - 2u_i + u_{i+1}}{h^2}}_{\Delta_h u_i}. $$
+        </div>
+        <div class="figure-caption"><b>1D random-walk Laplacian.</b> For a symmetric random walk on a uniform grid of
+          spacing $h$, the operator $\mathbf{I}-\mathbf{P}$ is exactly the standard
+          three-point finite-difference Laplacian $\Delta_h$, up to the rescaling $-h^2/2$.</div>
+      </div>
+    </figure>
+
+    <p>And in 2D, the random-walk Laplacian for a symmetric walk on a regular grid recovers the standard <a
+        href="https://en.wikipedia.org/wiki/Five-point_stencil" target="_blank" rel="noopener noreferrer">five-point
+        finite-difference stencil</a>.</p>
+
+    <figure class="figure" id="rwlap-fig-2d">
+      <div class="figure-body">
+        <div class="canvas-wrap" style="display:flex; justify-content:center;">
+          <svg viewBox="0 0 460 320" style="width:100%; max-width:460px; height:auto;"
+            xmlns="http://www.w3.org/2000/svg">
+            <!-- grid lines -->
+            <g stroke="#ddd" stroke-width="1">
+              <line x1="60" y1="60" x2="400" y2="60" />
+              <line x1="60" y1="160" x2="400" y2="160" />
+              <line x1="60" y1="260" x2="400" y2="260" />
+              <line x1="90" y1="40" x2="90" y2="280" />
+              <line x1="230" y1="40" x2="230" y2="280" />
+              <line x1="370" y1="40" x2="370" y2="280" />
+            </g>
+            <!-- arrows: 1/4 to each of 4 neighbors -->
+            <defs>
+              <marker id="arr2d" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" fill="#2a7" />
+              </marker>
+            </defs>
+            <path d="M222,160 Q175,135 100,160" fill="none" stroke="#2a7" stroke-width="1.6" marker-end="url(#arr2d)" />
+            <path d="M238,160 Q285,135 360,160" fill="none" stroke="#2a7" stroke-width="1.6" marker-end="url(#arr2d)" />
+            <path d="M230,152 Q205,105 230,70" fill="none" stroke="#2a7" stroke-width="1.6" marker-end="url(#arr2d)" />
+            <path d="M230,168 Q255,215 230,250" fill="none" stroke="#2a7" stroke-width="1.6" marker-end="url(#arr2d)" />
+            <!-- nodes -->
+            <g>
+              <circle cx="90" cy="60" r="5" fill="#bbb" stroke="#444" />
+              <circle cx="230" cy="60" r="6" fill="#bbb" stroke="#444" />
+              <circle cx="370" cy="60" r="5" fill="#bbb" stroke="#444" />
+              <circle cx="90" cy="160" r="6" fill="#bbb" stroke="#444" />
+              <circle cx="230" cy="160" r="7" fill="#e07a5f" stroke="#444" />
+              <circle cx="370" cy="160" r="6" fill="#bbb" stroke="#444" />
+              <circle cx="90" cy="260" r="5" fill="#bbb" stroke="#444" />
+              <circle cx="230" cy="260" r="6" fill="#bbb" stroke="#444" />
+              <circle cx="370" cy="260" r="5" fill="#bbb" stroke="#444" />
+            </g>
+            <!-- node labels (KaTeX) -->
+            <foreignObject x="180" y="34" width="100" height="22">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;justify-content:center;font-size:14px;">
+                $i,\,j+1$</div>
+            </foreignObject>
+            <foreignObject x="0" y="152" width="76" height="22">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;justify-content:flex-end;font-size:14px;">
+                $i-1,\,j$</div>
+            </foreignObject>
+            <foreignObject x="244" y="166" width="80" height="22">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;justify-content:flex-start;font-size:14px;">
+                $i,\,j$</div>
+            </foreignObject>
+            <foreignObject x="384" y="152" width="80" height="22">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;justify-content:flex-start;font-size:14px;">
+                $i+1,\,j$</div>
+            </foreignObject>
+            <foreignObject x="180" y="266" width="100" height="22">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;justify-content:center;font-size:14px;">
+                $i,\,j-1$</div>
+            </foreignObject>
+            <!-- spacing labels -->
+            <foreignObject x="135" y="291" width="50" height="20">
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                style="display:flex;justify-content:center;font-size:12px;color:#666;">$h$</div>
+            </foreignObject>
+            <foreignObject x="275" y="291" width="50" height="20">
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                style="display:flex;justify-content:center;font-size:12px;color:#666;">$h$</div>
+            </foreignObject>
+            <!-- probability labels -->
+            <foreignObject x="135" y="116" width="50" height="22">
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                style="display:flex;justify-content:center;font-size:14px;color:#2a7;">$\tfrac{1}{4}$</div>
+            </foreignObject>
+            <foreignObject x="275" y="116" width="50" height="22">
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                style="display:flex;justify-content:center;font-size:14px;color:#2a7;">$\tfrac{1}{4}$</div>
+            </foreignObject>
+            <foreignObject x="170" y="86" width="50" height="22">
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                style="display:flex;justify-content:center;font-size:14px;color:#2a7;">$\tfrac{1}{4}$</div>
+            </foreignObject>
+            <foreignObject x="240" y="206" width="50" height="22">
+              <div xmlns="http://www.w3.org/1999/xhtml"
+                style="display:flex;justify-content:center;font-size:14px;color:#2a7;">$\tfrac{1}{4}$</div>
+            </foreignObject>
+          </svg>
+        </div>
+        <div class="equation">
+          $$ \begin{aligned}
+          \big[(\mathbf{I}-\mathbf{P})\,\mathbf{u}\big]_{i,j}
+          &\;=\; u_{i,j} - \tfrac{1}{4}\big(u_{i-1,j} + u_{i+1,j} + u_{i,j-1} + u_{i,j+1}\big) \\
+          &\;=\; -\tfrac{h^2}{4}\,\underbrace{\frac{u_{i-1,j} + u_{i+1,j} + u_{i,j-1} + u_{i,j+1} -
+          4u_{i,j}}{h^2}}_{\Delta_h u_{i,j}}.
+          \end{aligned} $$
+        </div>
+        <div class="figure-caption"><b>2D random-walk Laplacian.</b> For a symmetric random walk on a uniform square
+          grid of spacing $h$, the operator $\mathbf{I}-\mathbf{P}$ is exactly the standard five-point
+          finite-difference Laplacian $\Delta_h$, up to the rescaling $-h^2/4$.</div>
+      </div>
+    </figure>
+
+    <p>From there, you probably see the pattern. What if instead of these canonical probabilities, we considered more
+      general transition probabilities based on the geometry of the subdomains?</p>
+
+
+    <!-- ===== SECTION 6 ===== -->
+    <h2 data-label="coupling"><span class="secnum">6</span>Coupling Tiles via an Absorbing Markov Chain</h2>
+
+    <p>Now we finally have all the pieces to recover values at interfaces between subdomains! The trick is to <i>Walk
+        <b>on</b>
+        Decomposed Subdomains</i>, or more precisely on their interfaces.
+      To do so, we use the strategy defined in <a class="ref" data-ref="poisson-kernel"></a> to estimate and tabulate
+      transition probabilities between interfaces<fn>One important subtlety: <a class="ref"
+          data-ref="poisson-kernel"></a> only covers how to estimate
+        probabilities from the interior to interfaces, not between interfaces themselves. Handling the latter requires
+        an additional <i>overlapping</i> domain decomposition — which we call the co-edge decomposition — that treats
+        interfaces as the interior of their corresponding subdomains. See the paper for details.
+      </fn>. Discretizing these probabilities yields a global Markov chain over interfaces, and the absorbing
+      Markov chain formalism from <a class="ref" data-ref="markov"></a> lets us solve for interface values directly
+      through a deterministic (sparse) linear solve — sidestepping the relatively long, high-variance random walks that
+      would
+      otherwise be required.</p>
+
+    <p>Once interface values are known, the boundary of every tile is fully determined, and we recover each tile's
+      interior with a single matrix–vector product using precomputed solution operators for the interior, i.e.,
+      $\mathbf{H}_i$ as defined in <a class="ref" data-ref="poisson-kernel"></a>.
+      These per-tile
+      reconstructions are independent and thus trivially parallelizable.</p>
+
+    <p>The interactive figure below summarizes all steps of the pipeline. Feel free to slide through the various
+      stages and play with the different parameters.</p>
+
+    <figure class="figure" id="pipeline-fig">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col">
+              <canvas class="diagram"></canvas>
+              <div class="pipeline-stage-bar">
+                <label>Pipeline stage: <span class="brush-val" data-role="stage-label">0 — Domain</span></label>
+                <input type="range" class="colormap-slider stage-slider" data-role="stage" min="0" max="4" step="1"
+                  value="0" list="pipeline-stage-ticks" />
+                <datalist id="pipeline-stage-ticks">
+                  <option value="0" label="0"></option>
+                  <option value="1" label="1"></option>
+                  <option value="2" label="2"></option>
+                  <option value="3" label="3"></option>
+                  <option value="4" label="4"></option>
+                </datalist>
+                <div class="stage-tick-labels">
+                  <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
+                </div>
+                <p class="stage-desc" data-role="stage-desc"></p>
+              </div>
+            </div>
+            <div class="controls">
+              <label>Tiles per axis T: <span data-role="tiles-label">4</span></label>
+              <input type="range" data-role="tiles" min="1" max="8" step="1" value="4" />
+
+              <label style="margin-top:10px;">Subtile resolution B: <span data-role="sub-label">4</span></label>
+              <input type="range" data-role="sub" min="1" max="8" step="1" value="4" />
+              <div class="stat" data-role="res-label">N = T × B = 16</div>
+
+              <label style="margin-top:14px;">Neumann obstacle</label>
+              <div class="presets" data-role="scene-presets"></div>
+
+              <label style="margin-top:14px;">Boundary presets</label>
+              <div class="presets" data-role="presets"></div>
+
+              <div class="legend" style="margin-top:10px;">
+                <span><i style="background:var(--color-dirichlet)"></i> Dirichlet boundary</span>
+                <span><i style="background:var(--color-neumann)"></i> Neumann obstacle</span>
+                <span><i style="background:var(--color-interface)"></i> Tile interfaces</span>
+              </div>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Slide through the pipeline.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>The Walk on Decomposed Subdomains (WoDS) pipeline.</b>
+          (1) Partition $\Omega$ into tiles $\{\Omega_i\}$ separated by interfaces.
+          (2) For each tile, estimate first-passage transition probabilities between its interfaces with short
+          local Walk-on-Stars walks; assemble these into per-tile operators $\mathbf{H}_i$.
+          (3) Stitch the corresponding probabilities into one global absorbing Markov chain over all interfaces and
+          recover interface values via a single sparse solve
+          $(\mathbf{I}-\mathbf{Q})\,\mathbf{u}_{\mathcal{T}} = \mathbf{R}\,\mathbf{g}$.
+          (4) With every tile's boundary now known, reconstruct the interior in parallel by applying local interior
+          solution operators, i.e.,
+          $\mathbf{H}_i$.
+        </div>
+      </div>
+    </figure>
+
+    <!-- ===== SECTION 7 ===== -->
+    <h2 data-label="benefits"><span class="secnum">7</span>Additional Benefits</h2>
+
+
+    <p>One thing that I haven't mentioned is that in practice, we needn't compute solution operators for every tile of
+      the domain. If a tile does not intersect geometry, its solution operator is the same everywhere and we can
+      precompute it only once across all scenes<fn>It actually has a closed-form expression.</fn>. In other words,
+      the number of solution operators that must be estimated grows with the geometric complexity and not domain size
+      (i.e.,
+      area in 2D). This has another significant advantage: if only a subset of the scene changes — as is common in many
+      design or simulation workflows — only the affected tiles need to be re-estimated.</p>
+
+    <figure class="figure" id="locality-fig">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col">
+              <canvas class="diagram"></canvas>
+            </div>
+            <div class="controls">
+              <label>Tiles per axis $T$: <span data-role="tiles-label">10×10</span></label>
+              <input type="range" data-role="tiles" min="2" max="32" step="1" value="10" />
+
+              <label style="margin-top:14px;">Scene</label>
+              <div class="presets" data-role="scene-presets"></div>
+
+              <div class="stat" style="margin-top:14px;">
+                MC-estimated tiles: <span data-role="mc-label">—</span><br />
+                Precomputed (shared): <span data-role="pre-label">—</span>
+              </div>
+
+              <div class="legend" style="margin-top:10px;">
+                <span><i style="background:rgba(255,196,0,0.7)"></i> Intersects geometry — needs Monte Carlo</span>
+                <span><i style="background:rgba(120,120,120,0.25)"></i> Empty tile — shared operator</span>
+              </div>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Pick a scene and adjust
+                $T$. Only the highlighted tiles must have their solution operator estimated; all empty tiles share a
+                single closed-form operator computed once.</p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Locality of solution-operator estimation.</b> Our method inherits the locality of
+          grid-based approaches by requiring the estimation of solution operators only in regions near the geometry. As
+          a result, the actual Monte Carlo cost scales with geometric complexity rather than domain size.
+        </div>
+      </div>
+    </figure>
+
+    <p>Another beautiful thing is that our approach exposes an adjustable trade-off between the cost of stochastic Monte
+      Carlo
+      estimation of solution operators (which is highly parallelizable within each individual tile) and the cost of the
+      deterministic global solve on interfaces. As can be seen in the interactive figure below, at fixed output
+      resolution $N$, increasing the size $B$ of each tile requires more Monte Carlo effort per tile, but the
+      deterministic global solve becomes cheaper because the interfaces it couples are fewer and farther apart. In other
+      words, we can directly amortize the $O(N^2)$ degrees of freedom of the global solve to $O(N^2/B)$ degrees of
+      freedom if we can afford more Monte Carlo<fn>You may argue that what matters most is not the number of degrees of
+        freedom but the sparsity or conditioning of the matrix. It turns out that our matrices are sparse because they
+        only couple neighboring interfaces. In other words, the
+        global connectivity of the system closely resembles
+        finite-difference systems, except that each interface-to-interface connection may carry multiple "transition
+        edges" proportional to the per-tile discretization parameter $B$.</fn>
+      <fn>There's another subtle point, which is that our matrices aren't symmetric as we describe and discuss in
+        Section 8 of the
+        paper.</fn>. This is a significant result, which I
+      hope
+      we can build upon in the
+      future because Monte Carlo is embarrassingly parallel and can run on accelerated hardware (e.g., GPUs)<fn>What I'm
+        not saying here is that there is not only a cost in samples but also in memory! Larger tiles mean more memory
+        usage,
+        and actually quite a lot! But as I discuss in the next section, I believe our community has developed many
+        adjacent tools to mitigate this issue, and I hope I or others will explore them in the future.
+      </fn>.
+    </p>
+
+    <figure class="figure" id="tradeoff-fig">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row" style="flex-wrap:nowrap; justify-content:center;">
+            <div class="canvas-col" style="width:320px;">
+              <canvas class="diagram" data-role="domain"></canvas>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:8px; width:320px;">
+                Interface values at fixed $N$. Tile interfaces are the only unknowns of the global
+                solve.
+              </p>
+            </div>
+            <div class="canvas-col" style="width:320px; position:relative;">
+              <canvas class="diagram" data-role="plot"></canvas>
+              <span data-role="x-axis-label"
+                style="position:absolute; left:181px; top:303px; transform:translate(-50%,0); font-size:12px; color:var(--color-text); white-space:nowrap;">Subtile
+                resolution $B$</span>
+              <span data-role="y-axis-label"
+                style="position:absolute; left:8px; top:149px; transform:translate(-50%,-50%) rotate(-90deg); font-size:12px; color:var(--color-text); white-space:nowrap;">System
+                size $N^2 / B$</span>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:8px; width:320px;">
+                System size of the deterministic global solve as a function of subtile resolution $B$.
+              </p>
+            </div>
+          </div>
+          <div class="controls" style="margin-top:14px; width:660px; max-width:100%;">
+            <label style="font-variant-numeric: tabular-nums;">Subtile resolution
+              $B$ = <span data-role="b-label" style="display:inline-block; min-width:2ch; text-align:right;">4</span>
+              &nbsp;·&nbsp;
+              Tiles per axis $T = N/B$ = <span data-role="t-label"
+                style="display:inline-block; min-width:2ch; text-align:right;">16</span> &nbsp;·&nbsp;
+              Global-solve DoFs $\approx N^2/B$ = <span data-role="dofs-label"
+                style="display:inline-block; min-width:4ch; text-align:right;">1024</span></label>
+            <input type="range" class="colormap-slider plain-slider" data-role="b-slider" min="0" max="6" step="1"
+              value="2" />
+            <div class="slider-ticks" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.72rem;">
+              <span style="color:#6b7d54;">Grid-like ($T{=}N$, $B{=}1$)</span>
+              <span style="color:#b07a3a;">Pure operator ($T{=}1$, $B{=}N$)</span>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Trade-off between local Monte Carlo and global solve.</b>
+          At fixed output resolution $N$, sliding $B$ from 1 to $N$ continuously interpolates between a grid-like
+          regime — where the global solve carries all $O(N^2)$ degrees of freedom — and a pure solution-operator
+          regime — where the global solve is trivial ($O(1)$) but every tile requires a fully tabulated interior
+          operator.
+        </div>
+      </div>
+    </figure>
+
+
+    <!-- ===== SECTION 8 ===== -->
+    <h2 data-label="reflect"><span class="secnum">8</span>Reflections and Future Work</h2>
+
+    <p>I am very excited by our work and the doors it opens for future research. One thing people often bring up is the
+      analogy to <a href="https://en.wikipedia.org/wiki/Radiosity_(computer_graphics)" target="_blank"
+        rel="noopener noreferrer">radiosity</a> and Monte Carlo path tracing in rendering<fn>It turns
+        out our approach has even more connections to previous rendering works and in particular volume rendering. See
+        for example these works<cite data-key="zhao2013modular,blumer2016reduced"></cite>.</fn>.
+      There was once a time when people used finite elements for rendering and were actually very reluctant to adopt
+      Monte Carlo methods because of their noise.
+    </p>
+
+    <p>In this context, Pete Shirley famously said in an <a
+        href="https://www.realtimerendering.com/resources/RTNews/html/rtnv10n2.html#art6" target="_blank"
+        rel="noopener noreferrer">email thread</a> in 1997<cite data-key="shirley1997whatswrong"></cite>:</p>
+
+    <blockquote class="email-quote">
+      <p>In summary, pure MCPT has only two advantages &mdash; it is so dumb that it doesn't get hit by big scenes, and
+        it is easy to implement. […]</p>
+      <p>I think the solution is <span class="quote-highlight">hybrid methods</span> &mdash; add bias! (This is
+        blasphemy
+        in MC circles :^) ). I do want to keep the good parts of MC methods &mdash; they are damned robust and are
+        possible to implement correctly &mdash; my MC code does not bomb on weird untweaked inputs &mdash; tell me with
+        a straight face that is true of most non-MC implementations. However, you are right that the results are too
+        noisy!!! We can keep these benefits and reduce noise <span class="quote-highlight">if we add bias the right way
+          (not that I know what that right way is)</span>.</p>
+    </blockquote>
+
+    <p>One thing I highlighted here is that Pete Shirley was right: to be adopted, Monte Carlo methods needed "hybrid
+      methods". And the solution was <a href="https://blogs.nvidia.com/blog/what-is-denoising/" target="_blank"
+        rel="noopener noreferrer">denoising</a>! Without denoising, existing visual effects and animated
+      films would probably not be path traced! People even <a href="https://www.oscars.org/sci-tech/ceremonies/2025"
+        target="_blank" rel="noopener noreferrer">won an Academy Award</a> for that.</p>
+
+    <p>So, to be competitive with classical numerical methods, do Monte Carlo PDE solvers also need
+      hybrid approaches? Probably yes! But is denoising the right answer? Maybe not.</p>
+
+    <p>In our paper, we take a different route and instead try to reconcile grid-free Monte Carlo methods with
+      grid-based solvers. One thing that I learned with this project is that grid-based methods just work so well: if
+      you want
+      convergence, you simply cannot beat them! And it's not a surprise, ask anyone doing numerical analysis and
+      they
+      will tell you something like:</p>
+
+    <blockquote class="email-quote">
+      <p>Monte Carlo is an extremely bad method; it should be used only when all alternative methods are
+        worse.<cite data-key="sokal1997monte"></cite></p>
+    </blockquote>
+
+    <p>My take is: use as many grid-based methods as you can, and complement them with grid-free Monte Carlo methods
+      where you suffer most (e.g., geometry).</p>
+
+    <p>That said, there is still a long way to go: generalizing to other PDEs or boundary conditions, better
+      discretization schemes, dedicated global solvers, improved Monte Carlo estimators, etc. Rest assured that we are
+      working
+      on
+      that...</p>
+
+    <!-- ===== References ===== -->
+    <h2>References</h2>
+    <div id="bibliography"></div>
+
+  </article>
+
+  <footer>
+    <a href="https://adg.csail.mit.edu/" class="footer-logo" target="_blank" rel="noopener noreferrer" aria-label="Algorithmic Design Group"><img
+        src="assets/logo_adg.png" alt="Algorithmic Design Group" /></a>
+    <span>Webpage by <a href="https://clementjambon.github.io/" target="_blank" rel="noopener noreferrer">Clément Jambon</a> and <a
+        href="https://claude.ai/" target="_blank" rel="noopener noreferrer">Claude</a>.</span>
+  </footer>
+
+  <!-- ===== Scripts ===== -->
+  <script src="js/config.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/laplace.js"></script>
+  <script src="js/solver.js"></script>
+  <script src="js/scenes.js"></script>
+  <script src="js/interactive_dirichlet.js"></script>
+  <script src="js/interactive_neumann.js"></script>
+  <script src="js/interactive_brownian.js"></script>
+  <script src="js/interactive_walks.js"></script>
+  <script src="js/interactive_tiles.js"></script>
+  <script src="js/interactive_poisson_kernel.js"></script>
+  <script src="js/interactive_poisson_solution.js"></script>
+  <script src="js/interactive_markov.js"></script>
+  <script src="js/interactive_pipeline.js"></script>
+  <script src="js/interactive_tradeoff.js"></script>
+  <script src="js/interactive_locality.js"></script>
+  <script src="js/auto_markov.js"></script>
+  <script src="js/references.js"></script>
+  <script src="js/labels.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      WoDS.interactiveDirichlet(document.getElementById('i0'));
+      WoDS.interactiveNeumann(document.getElementById('i0b'));
+      WoDS.interactiveBrownian(document.getElementById('ibrown'));
+      WoDS.interactiveWalks(document.getElementById('i1'));
+      WoDS.interactiveTiles(document.getElementById('i2'));
+      WoDS.interactivePoissonKernel(document.getElementById('i3'));
+      WoDS.interactivePoissonSolution(document.getElementById('i3b'));
+      WoDS.autoMarkov(document.getElementById('amc-anim'));
+      WoDS.interactiveMarkov(document.getElementById('imc'));
+      WoDS.interactivePipeline(document.getElementById('pipeline-fig'));
+      WoDS.interactiveTradeoff(document.getElementById('tradeoff-fig'));
+      WoDS.interactiveLocality(document.getElementById('locality-fig'));
+
+      // Bibtex copy
+      const btn = document.querySelector('[data-role="copy-bib"]');
+      if (btn) btn.addEventListener('click', () => {
+        const code = document.querySelector('#bibtex code').innerText;
+        navigator.clipboard.writeText(code).then(() => {
+          btn.textContent = 'copied';
+          setTimeout(() => btn.textContent = 'copy', 1500);
+        });
+      });
+    });
+  </script>
+
+</body>
+
+</html>
