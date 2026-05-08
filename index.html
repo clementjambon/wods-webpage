@@ -25,9 +25,10 @@
   <header class="paper">
     <h1>Walk on Decomposed Subdomains: A Hybrid Monte Carlo–Deterministic Solver for Elliptic PDEs</h1>
     <div class="venue"><i>ACM Transactions on Graphics (SIGGRAPH) 2026</i></div>
-    <div class="authors"><a href="https://clementjambon.github.io/" target="_blank" rel="noopener noreferrer">Clément Jambon</a> · <a
-        href="https://sinabiz.github.io/" target="_blank" rel="noopener noreferrer">Mohammad Sina Nabizadeh</a> · <a
-        href="https://people.csail.mit.edu/mina/" target="_blank" rel="noopener noreferrer">Mina Konaković Luković</a></div>
+    <div class="authors"><a href="https://clementjambon.github.io/" target="_blank" rel="noopener noreferrer">Clément
+        Jambon</a> · <a href="https://sinabiz.github.io/" target="_blank" rel="noopener noreferrer">Mohammad Sina
+        Nabizadeh</a> · <a href="https://people.csail.mit.edu/mina/" target="_blank" rel="noopener noreferrer">Mina
+        Konaković Luković</a></div>
     <div class="affil">Massachusetts Institute of Technology</div>
     <div class="links">
       <a href="refs/wods.pdf" target="_blank" rel="noopener noreferrer">Paper</a>
@@ -84,7 +85,8 @@
 
   <article id="blogpost">
 
-    <p class="byline">Blog post by <a href="https://clementjambon.github.io/" target="_blank" rel="noopener noreferrer">Clément Jambon</a>.</p>
+    <p class="byline">Blog post by <a href="https://clementjambon.github.io/" target="_blank"
+        rel="noopener noreferrer">Clément Jambon</a>.</p>
 
     <p><b>Disclaimer:</b> The goal of this blog post is to walk you through the main intuitions and ideas behind our
       work. To this end,
@@ -209,7 +211,8 @@
         data-key="muller1956continuous,sawhney2020mcgp"></cite>.</p>
 
     <p>The intuition, from stochastic calculus, is that if
-      you were to simulate a <a href="https://en.wikipedia.org/wiki/Brownian_motion" target="_blank" rel="noopener noreferrer">Brownian motion</a> (a continuous
+      you were to simulate a <a href="https://en.wikipedia.org/wiki/Brownian_motion" target="_blank"
+        rel="noopener noreferrer">Brownian motion</a> (a continuous
       random walk) starting from an interior point $x$, it would
       eventually hit the boundary at some random location $Z_\tau$. The expected value $\mathbb{E}[g(Z_\tau)]$ of the
       boundary condition at that
@@ -244,7 +247,8 @@
       motion is computationally expensive and often biased<fn>You typically have to discretize it, for example with
         fixed time
         steps with <a href="https://en.wikipedia.org/wiki/Euler–Maruyama" target="_blank"
-          rel="noopener noreferrer">Euler–Maruyama</a>.</fn>. The Walk on Spheres algorithm overcomes this by observing that the
+          rel="noopener noreferrer">Euler–Maruyama</a>.</fn>. The Walk on Spheres algorithm overcomes this by observing
+      that the
       exit
       distribution of Brownian motion on a sphere is exactly uniform.
       This lets us instead hop from one sphere boundary to the next, where each sphere is inscribed in
@@ -259,8 +263,8 @@
         enclosing
         ball of each star.</fn>
       . If you're interested in learning more about Monte Carlo methods for PDEs, there's a great course and resources
-      available <a href="https://rohan-sawhney.github.io/mcgp-resources/" target="_blank" rel="noopener noreferrer">here</a><cite
-        data-key="sawhney2025star"></cite>.
+      available <a href="https://rohan-sawhney.github.io/mcgp-resources/" target="_blank"
+        rel="noopener noreferrer">here</a><cite data-key="sawhney2025star"></cite>.
     </p>
 
     <figure class="figure" id="i1">
@@ -525,7 +529,8 @@
     <!-- ===== SECTION 5 ===== -->
     <h2 data-label="markov"><span class="secnum">5</span>Absorbing Markov Chains</h2>
 
-    <p>An <a href="https://en.wikipedia.org/wiki/Absorbing_Markov_chain" target="_blank" rel="noopener noreferrer">absorbing Markov chain</a> is also a random
+    <p>An <a href="https://en.wikipedia.org/wiki/Absorbing_Markov_chain" target="_blank"
+        rel="noopener noreferrer">absorbing Markov chain</a> is also a random
       walk, but this time on a discrete (and finite) set of states
       $\mathcal{S}$.
       Some states $\mathcal{T}$ are called <b>transient</b> (the walker may pass through them, possibly many times) and
@@ -615,7 +620,8 @@
       Monte Carlo estimate stops wiggling around. So here is the natural question: do we really have to <i>simulate</i>
       random walks?</p>
 
-    <p>Look at any transient state $i$. By the <a href="https://en.wikipedia.org/wiki/Memorylessness" target="_blank" rel="noopener noreferrer">memoryless
+    <p>Look at any transient state $i$. By the <a href="https://en.wikipedia.org/wiki/Memorylessness" target="_blank"
+        rel="noopener noreferrer">memoryless
         property</a> of Markov chains, a walker sitting at $i$ takes a single step to a
       neighbor $j$ with probability $P_{ij}$, and from there the rest of the walk is statistically identical to a
       fresh walk launched at $j$. In other words, the expected absorbed value at $i$ is just the weighted average of
@@ -1074,7 +1080,7 @@
       Monte Carlo methods because of their noise.
     </p>
 
-    <p>In this context, Pete Shirley famously said in an <a
+    <p>In this context, Peter Shirley famously said in an <a
         href="https://www.realtimerendering.com/resources/RTNews/html/rtnv10n2.html#art6" target="_blank"
         rel="noopener noreferrer">email thread</a> in 1997<cite data-key="shirley1997whatswrong"></cite>:</p>
 
@@ -1090,7 +1096,7 @@
           (not that I know what that right way is)</span>.</p>
     </blockquote>
 
-    <p>One thing I highlighted here is that Pete Shirley was right: to be adopted, Monte Carlo methods needed "hybrid
+    <p>One thing I highlighted here is that Peter Shirley was right: to be adopted, Monte Carlo methods needed "hybrid
       methods". And the solution was <a href="https://blogs.nvidia.com/blog/what-is-denoising/" target="_blank"
         rel="noopener noreferrer">denoising</a>! Without denoising, existing visual effects and animated
       films would probably not be path traced! People even <a href="https://www.oscars.org/sci-tech/ceremonies/2025"
@@ -1127,10 +1133,10 @@
   </article>
 
   <footer>
-    <a href="https://adg.csail.mit.edu/" class="footer-logo" target="_blank" rel="noopener noreferrer" aria-label="Algorithmic Design Group"><img
-        src="assets/logo_adg.png" alt="Algorithmic Design Group" /></a>
-    <span>Webpage by <a href="https://clementjambon.github.io/" target="_blank" rel="noopener noreferrer">Clément Jambon</a> and <a
-        href="https://claude.ai/" target="_blank" rel="noopener noreferrer">Claude</a>.</span>
+    <a href="https://adg.csail.mit.edu/" class="footer-logo" target="_blank" rel="noopener noreferrer"
+      aria-label="Algorithmic Design Group"><img src="assets/logo_adg.png" alt="Algorithmic Design Group" /></a>
+    <span>Webpage by <a href="https://clementjambon.github.io/" target="_blank" rel="noopener noreferrer">Clément
+        Jambon</a> and <a href="https://claude.ai/" target="_blank" rel="noopener noreferrer">Claude</a>.</span>
   </footer>
 
   <!-- ===== Scripts ===== -->
