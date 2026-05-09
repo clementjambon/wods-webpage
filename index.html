@@ -11,6 +11,8 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet">
 
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
   <link rel="stylesheet" href="css/theme.css" />
   <link rel="stylesheet" href="css/style.css" />
 
@@ -345,9 +347,11 @@
       $\mathcal{D}=\{\Omega_i\}$, for example regular tiles. On each tile, the Dirichlet boundary is the union of (a)
       physical Dirichlet pieces
       inherited from $\partial\Omega_D$ and (b) artificial Dirichlet pieces — the <i>interfaces</i> with neighboring
-      tiles<fn>Note that this decomposition does not require any meshing. Subdomains can be totally arbitrary, are free
-        to intersect Neumann
-        boundaries, and can cover parts outside of the domain $\Omega$.</fn>. Walks within a tile now stop at the tile's
+      tiles. Note that this decomposition does not require any meshing. Subdomains can be totally arbitrary, are free
+      to intersect Neumann
+      boundaries, and can cover parts outside of the domain $\Omega$.</p>
+
+    <p>Walks within a tile now stop at the tile's
       boundary as shown in the interactive figure below. Feel free to adjust the tiling resolution and see how it
       affects walk lengths in the histogram.
     </p>
@@ -1117,8 +1121,9 @@
         worse.<cite data-key="sokal1997monte"></cite></p>
     </blockquote>
 
-    <p>My take is: use as many grid-based methods as you can, and complement them with grid-free Monte Carlo methods
-      where you suffer most (e.g., geometry).</p>
+    <p>My take is: lean on the well-known benefits of grid-based methods as much as possible (e.g., strong and fast
+      convergence guarantees), and bring in grid-free Monte Carlo where grid-based methods suffer most (e.g., complex
+      geometry).</p>
 
     <p>That said, there is still a long way to go: generalizing to other PDEs or boundary conditions, better
       discretization schemes, dedicated global solvers, improved Monte Carlo estimators, etc. Rest assured that we are
