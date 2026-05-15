@@ -546,6 +546,18 @@ canvas.hist { cursor: default; }
 }
 .pipeline-annot b { color: var(--color-text); }
 
+/* Random-walk Laplacian stencil figures: the SVG is capped at 460px
+ * but its figure-body (inline-block) shrinks to its widest content.
+ * Now that the 1D equation is rendered as an `aligned` block (two
+ * shorter lines instead of one long one), figure-body would shrink
+ * to the SVG's 460px and the stencil would touch the canvas-wrap
+ * edges. Give both figure-bodies a desktop min-width so the SVG
+ * keeps the breathing room it had originally. */
+@media (min-width: 721px) {
+  #rwlap-fig .figure-body,
+  #rwlap-fig-2d .figure-body { min-width: 660px; }
+}
+
 .katex-display {
   margin: 14px 0 !important;
   /* Safety clip in case font-size scaling doesn't shrink every
