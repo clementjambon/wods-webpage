@@ -590,13 +590,16 @@
       subLabel.textContent = String(B);
       resLabel.textContent = `N = T × B = ${T * B}`;
       const tilingActive = stage >= 1;
+      const subActive = stage >= 3;
       tilesSlider.disabled = !tilingActive;
-      subSlider.disabled = !tilingActive;
-      const op = tilingActive ? '1' : '0.4';
-      for (const el of [tilesSlider, subSlider, resLabel,
-        tilesSlider.previousElementSibling,
-        subSlider.previousElementSibling]) {
-        if (el) el.style.opacity = op;
+      subSlider.disabled = !subActive;
+      const opTiles = tilingActive ? '1' : '0.4';
+      const opSub = subActive ? '1' : '0.4';
+      for (const el of [tilesSlider, tilesSlider.previousElementSibling]) {
+        if (el) el.style.opacity = opTiles;
+      }
+      for (const el of [subSlider, resLabel, subSlider.previousElementSibling]) {
+        if (el) el.style.opacity = opSub;
       }
       if (stageDesc) {
         const [name, body] = STAGE_DESCRIPTIONS[stage];
