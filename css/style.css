@@ -378,7 +378,7 @@ input[type="range"].colormap-slider.plain-slider {
   margin-bottom: 6px;
 }
 /* Pipeline stage slider — sits under the canvas, full width. */
-.pipeline-stage-bar { width: 100%; max-width: 380px; margin: 10px 0 0; }
+.pipeline-stage-bar { width: 100%; max-width: 380px; margin: 10px auto 0; }
 .pipeline-stage-bar label {
   display: block;
   font-size: 0.78rem;
@@ -754,6 +754,17 @@ footer a { color: inherit; border-bottom: 1px solid var(--color-rule); }
 @media (max-width: 720px) {
   .canvas-row { flex-direction: column; }
   .canvas-row .controls { max-width: none; width: 100%; }
+  /* Trade-off figure: each .canvas-col carries an inline width:320px
+   * which beats the .canvas-col defaults; in column flex with the
+   * row's default align-items: flex-start, both panels pin to the
+   * left of the row. Center them as flex items instead. */
+  #tradeoff-fig .canvas-row { align-items: center; }
+  /* Canvas-col spans the full row so the controls below it stay
+   * full-width, but the canvas itself (which can be narrower than
+   * the row, e.g. a 380px square on a 320px viewport after scaling)
+   * is centered within the column rather than pinned to the left. */
+  .canvas-row .canvas-col { text-align: center; }
+  .canvas-row .canvas-col > canvas { display: inline-block; }
   #imc .controls { grid-template-columns: 1fr !important; }
   .split { grid-template-columns: 1fr; }
   .pipeline { grid-template-columns: 1fr 1fr; }
