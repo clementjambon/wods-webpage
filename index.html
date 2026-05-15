@@ -741,8 +741,8 @@
         </div>
         <div class="equation">
           $$ \begin{aligned}
-\big[(\mathbf{I}-\mathbf{P})\,\mathbf{u}\big]_i
-&\;=\; u_i - \tfrac{1}{2}u_{i-1} - \tfrac{1}{2}u_{i+1} \\
+          \big[(\mathbf{I}-\mathbf{P})\,\mathbf{u}\big]_i
+          &\;=\; u_i - \tfrac{1}{2}u_{i-1} - \tfrac{1}{2}u_{i+1} \\
           &\;=\; -\tfrac{h^2}{2}\,\underbrace{\frac{u_{i-1} - 2u_i + u_{i+1}}{h^2}}_{\Delta_h u_i}.
           \end{aligned} $$
         </div>
@@ -1180,6 +1180,56 @@
       WoDS.interactivePipeline(document.getElementById('pipeline-fig'));
       WoDS.interactiveTradeoff(document.getElementById('tradeoff-fig'));
       WoDS.interactiveLocality(document.getElementById('locality-fig'));
+
+      // Scale display equations to fit their column. KaTeX renders
+      // equations at their natural width; on narrow viewports the
+      // wider ones (multi-line aligned blocks, long stencil formulas)
+      // overflow. We measure each .katex-display and apply a
+      // proportional transform so it fits without horizontal scroll.
+      function fitEquations() {
+        document.querySelectorAll('.katex-display').forEach(el => {
+          const inner = el.querySelector('.katex');
+          if (!inner) return;
+          // Reset before measuring.
+          inner.style.fontSize = '';
+          const containerW = el.clientWidth;
+          if (!containerW) return;
+          // Measure the widest of scrollWidth and the rendered
+          // .katex-html bounding rect — for aligned/mtable layouts
+          // scrollWidth alone can under-report (it only catches
+          // right-edge overflow, but centered content overflows
+          // both sides).
+          let innerW = inner.scrollWidth;
+          const html = inner.querySelector('.katex-html');
+          if (html) innerW = Math.max(innerW, html.scrollWidth, html.getBoundingClientRect().width);
+          if (innerW > containerW) {
+            // KaTeX uses em units throughout, so shrinking font-size
+            // proportionally shrinks the layout (not just visually,
+            // unlike `transform: scale`) and the equation re-centers
+            // naturally via the parent's text-align: center. We
+            // scale relative to the *current* computed font-size
+            // (KaTeX's own stylesheet sets .katex to 1.21em) — using
+            // a percentage would clobber KaTeX's baseline and make
+            // the equation much smaller than needed.
+            const s = containerW / innerW;
+            const cur = parseFloat(getComputedStyle(inner).fontSize);
+            inner.style.fontSize = (cur * s) + 'px';
+          }
+        });
+      }
+      // Run after KaTeX has rendered (auto-render runs on its script
+      // load, which may finish after DOMContentLoaded), and again
+      // once KaTeX's web fonts finish loading — math glyphs swap
+      // from fallback to the real font and widths change.
+      window.addEventListener('load', fitEquations);
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(fitEquations);
+      }
+      let _eqResizeT;
+      window.addEventListener('resize', () => {
+        clearTimeout(_eqResizeT);
+        _eqResizeT = setTimeout(fitEquations, 100);
+      });
 
       // Bibtex copy
       const btn = document.querySelector('[data-role="copy-bib"]');

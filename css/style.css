@@ -527,7 +527,12 @@ canvas.hist { cursor: default; }
 }
 .pipeline-annot b { color: var(--color-text); }
 
-.katex-display { margin: 14px 0 !important; }
+.katex-display {
+  margin: 14px 0 !important;
+  /* Safety clip in case font-size scaling doesn't shrink every
+   * KaTeX child exactly proportionally on a narrow viewport. */
+  overflow: hidden;
+}
 
 pre.bibtex {
   font-family: var(--font-mono);
