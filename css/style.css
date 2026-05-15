@@ -736,4 +736,21 @@ footer a { color: inherit; border-bottom: 1px solid var(--color-rule); }
   header.paper h1 { font-size: 1.45rem; }
   article { padding: 16px 18px 64px; }
   header.paper { padding: 32px 18px 0; }
+
+  /* Canvases are intrinsically sized in pixels by JS (fitCanvas). On
+   * narrow viewports those fixed widths overflow — let the browser
+   * scale them to fit while preserving aspect ratio from the canvas's
+   * width/height attributes. */
+  .figure canvas { max-width: 100%; height: auto !important; }
+  .figure .figure-body { display: block; max-width: 100%; }
+  .figure .canvas-wrap { padding: 12px; }
+  /* Allow flex children to shrink below their content size so the
+   * canvas inside can scale down. */
+  .canvas-row, .canvas-row .canvas-col { min-width: 0; max-width: 100%; }
+  .canvas-row .canvas-col { width: 100%; }
+  /* Markov figure: the canvas is flanked by vertical sliders in a
+   * flex row — keep them inline but let the canvas shrink. */
+  #imc .canvas-wrap > div { max-width: 100%; }
+  #imc .canvas-wrap > div > div:first-child { max-width: 100%; flex-wrap: nowrap; }
+  #imc .canvas-col { flex: 1 1 0; min-width: 0; }
 }

@@ -740,9 +740,11 @@
           </svg>
         </div>
         <div class="equation">
-          $$ \big[(\mathbf{I}-\mathbf{P})\,\mathbf{u}\big]_i
-          \;=\; u_i - \tfrac{1}{2}u_{i-1} - \tfrac{1}{2}u_{i+1}
-          \;=\; -\tfrac{h^2}{2}\,\underbrace{\frac{u_{i-1} - 2u_i + u_{i+1}}{h^2}}_{\Delta_h u_i}. $$
+          $$ \begin{aligned}
+\big[(\mathbf{I}-\mathbf{P})\,\mathbf{u}\big]_i
+&\;=\; u_i - \tfrac{1}{2}u_{i-1} - \tfrac{1}{2}u_{i+1} \\
+          &\;=\; -\tfrac{h^2}{2}\,\underbrace{\frac{u_{i-1} - 2u_i + u_{i+1}}{h^2}}_{\Delta_h u_i}.
+          \end{aligned} $$
         </div>
         <div class="figure-caption"><b>1D random-walk Laplacian.</b> For a symmetric random walk on a uniform grid of
           spacing $h$, the operator $\mathbf{I}-\mathbf{P}$ is exactly the standard
