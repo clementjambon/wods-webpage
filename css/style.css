@@ -34,6 +34,23 @@ header.paper .venue {
   font-size: 0.95rem;
   margin-bottom: 14px;
 }
+header.paper .award {
+  margin: -8px 0 16px;
+}
+header.paper .award-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-interface);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+header.paper .award-badge:hover {
+  border-bottom-color: var(--color-interface);
+}
 header.paper .authors {
   font-size: 0.98rem;
   margin-bottom: 4px;
