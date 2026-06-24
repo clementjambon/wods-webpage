@@ -3,8 +3,12 @@
   const U = {};
 
   // Set up a hi-DPI canvas with a logical width/height in CSS pixels.
+  // W.WoDS.captureScale, when set, overrides devicePixelRatio so the
+  // capture helper (js/capture.js) can render the backing store at an
+  // arbitrarily high resolution for video export without changing the
+  // on-screen (CSS) size. Normal page loads never set it.
   U.fitCanvas = function (canvas, w, h) {
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = W.WoDS.captureScale || window.devicePixelRatio || 1;
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
     canvas.width = Math.round(w * dpr);
