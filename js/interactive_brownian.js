@@ -56,7 +56,10 @@
 
     function drawBoundary() {
       ctx.lineWidth = 4;
-      ctx.lineCap = 'butt';
+      // Square (not butt) caps so each side extends by half the line
+      // width and the four corners meet flush. With butt caps the
+      // separately-stroked sides leave a notch at each corner.
+      ctx.lineCap = 'square';
       // bottom: s in [0, 0.25], left->right
       ctx.strokeStyle = sideGradient(X0, Y1, X1, Y1, 0.00, 0.25);
       ctx.beginPath(); ctx.moveTo(X0, Y1); ctx.lineTo(X1, Y1); ctx.stroke();
