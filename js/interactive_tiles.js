@@ -16,7 +16,7 @@
   const C = W.WoDS.config;
 
   function init(root) {
-    const theme = W.WoDS.theme();
+    const theme = W.WoDS.themeFor(root);
     const canvas = root.querySelector('canvas.diagram');
     const histCanvas = root.querySelector('canvas.hist');
     const tileSlider = root.querySelector('input[data-role="tiles"]');
@@ -75,7 +75,7 @@
       ctx.lineWidth = 1.5;
       ctx.setLineDash([5,4]);
       ctx.strokeStyle = theme.neumann;
-      ctx.fillStyle = 'rgba(42,95,184,0.06)';
+      ctx.fillStyle = theme.neumannFill;
       for (const r of scene.rects) {
         const x = r.x0*W0, y = (1-r.y1)*H0;
         const w = (r.x1-r.x0)*W0, h = (r.y1-r.y0)*H0;

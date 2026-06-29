@@ -18,7 +18,7 @@
   const S = W.WoDS.solver;
 
   function init(root) {
-    const theme = W.WoDS.theme();
+    const theme = W.WoDS.themeFor(root);
     const canvas = root.querySelector('canvas.diagram');
     const recomputeBtn = root.querySelector('button[data-role="recompute"]');
     const statusLabel = root.querySelector('[data-role="status"]');
@@ -395,7 +395,7 @@
       ctx.strokeRect(PAD + 0.5, PAD + 0.5, SQ - 1, SQ - 1);
 
       // Obstacles
-      ctx.fillStyle = 'rgba(42,95,184,0.10)';
+      ctx.fillStyle = theme.neumannFill;
       ctx.strokeStyle = theme.neumann;
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 4]);
@@ -615,7 +615,7 @@
       const previewParams = {};
       for (const pp of preset.params) previewParams[pp.key] = pp.def;
       const { circles, rects } = preset.make(previewParams);
-      cx.fillStyle = 'rgba(42,95,184,0.15)';
+      cx.fillStyle = theme.neumannFill;
       cx.strokeStyle = theme.neumann;
       cx.lineWidth = 1;
       cx.setLineDash([3, 2]);

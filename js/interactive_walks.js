@@ -22,7 +22,7 @@
   const MAX_DRAW_STEPS = 600; // hard cap on points animated per walk
 
   function init(root) {
-    const theme = W.WoDS.theme();
+    const theme = W.WoDS.themeFor(root);
     const canvas = root.querySelector('canvas.diagram');
     const histCanvas = root.querySelector('canvas.hist');
     const obstSlider = root.querySelector('input[data-role="obstacles"]');
@@ -72,7 +72,7 @@
       ctx.lineWidth = 2;
       ctx.setLineDash([5,4]);
       ctx.strokeStyle = theme.neumann;
-      ctx.fillStyle = 'rgba(42,95,184,0.07)';
+      ctx.fillStyle = theme.neumannFill;
       for (const r of scene.rects) {
         const x = r.x0*W0, y = (1-r.y1)*H0;
         const w = (r.x1-r.x0)*W0, h = (r.y1-r.y0)*H0;
