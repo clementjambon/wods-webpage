@@ -82,9 +82,11 @@
     const START = [0.5, 0.5];
     let trail = [];
     let pos = START.slice();
-    let phase = 'walking'; // walking | landed
+    let phase = 'idle'; // idle | walking | landed
     let landedAt = null;
     let landedT = 0;
+
+    const dropBtn = root.querySelector('[data-role="drop"]');
 
     function renderTex(el, src, fallback) {
       if (window.katex) {
@@ -105,13 +107,25 @@
       xLabel.style.top = `${sy - 10}px`;
     }
 
-    function reset() {
+    // Park the particle at the start point without walking. The walk
+    // only begins when the user presses "Drop particle".
+    function goIdle() {
+      pos = START.slice();
+      trail = [pos.slice()];
+      phase = 'idle';
+      landedAt = null;
+      label.style.opacity = '0';
+    }
+
+    function startWalk() {
       pos = START.slice();
       trail = [pos.slice()];
       phase = 'walking';
       landedAt = null;
       label.style.opacity = '0';
     }
+
+    if (dropBtn) dropBtn.addEventListener('click', startWalk);
 
     function gauss() {
       const u1 = Math.max(1e-9, Math.random());
@@ -268,14 +282,20 @@
       drawBoundary();
       drawTrail();
 
-      if (phase === 'walking') {
+      if (phase === 'idle') {
+        // In capture mode there is no one to press the button, so keep
+        // the recording self-driving by dropping a particle on its own.
+        if (W.WoDS.captureMode) { startWalk(); lastStep = t; }
+      } else if (phase === 'walking') {
         const dt = t - lastStep;
         const n = Math.min(8, Math.max(1, Math.floor(dt / 4)));
         for (let i = 0; i < n; i++) step();
         lastStep = t;
       } else if (phase === 'landed') {
-        if (t - landedT > 1100) {
-          reset();
+        // Auto-loop only while recording; interactively the walk stays
+        // put until the user drops another particle.
+        if (W.WoDS.captureMode && t - landedT > 1100) {
+          startWalk();
           lastStep = t;
         }
       }
@@ -286,7 +306,7 @@
       requestAnimationFrame(tick);
     }
 
-    reset();
+    goIdle();
     requestAnimationFrame(tick);
   }
 
