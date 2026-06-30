@@ -252,6 +252,38 @@
       </div>
     </figure>
 
+    <p>Doing this independently at <i>every</i> interior point gives us the whole solution. With only a few walks per
+      point the estimate is noisy, but as we average more and more, the Monte Carlo variance vanishes and the smooth
+      harmonic solution emerges. The figure below loops this automatically; pause and drag the slider to inspect any
+      noise level:</p>
+
+    <figure class="figure" id="idenoise">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col"><canvas class="diagram"></canvas></div>
+            <div class="controls">
+              <label>Refresh rate: <span data-role="rate">1</span> walks/frame</label>
+              <input type="range" data-role="rate-slider" min="0.25" max="4" step="0.25" value="1" />
+              <div class="slider-ends"><span>slow</span><span>fast</span></div>
+              <button data-role="play">⏸ Pause</button>
+              <button data-role="restart">↻ Restart</button>
+              <div class="legend">
+                <span><i style="background:var(--hm-low)"></i> low $u$</span>
+                <span><i style="background:var(--hm-high)"></i> high $u$</span>
+              </div>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Every interior pixel runs
+                independent Walk-on-Spheres estimates of $u(x)=\mathbb{E}[g(Z_\tau)]$. Averaging more walks per pixel
+                denoises the field into the harmonic solution. It runs continuously; the slider sets how fast.</p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Denoising the BVP solution.</b> The same square Dirichlet problem, solved
+          everywhere at once by Monte Carlo. Each pixel averages many random walks; with few walks the interior is
+          noisy, and as the count grows the variance vanishes to reveal the smooth solution $u$.</div>
+      </div>
+    </figure>
+
     <p>However, simulating Brownian
       motion is computationally expensive and often biased<fn>You typically have to discretize it, for example with
         fixed time
@@ -1162,6 +1194,7 @@
   <script src="js/interactive_dirichlet.js"></script>
   <script src="js/interactive_neumann.js"></script>
   <script src="js/interactive_brownian.js"></script>
+  <script src="js/interactive_denoise.js"></script>
   <script src="js/interactive_walks.js"></script>
   <script src="js/interactive_tiles.js"></script>
   <script src="js/interactive_poisson_kernel.js"></script>
@@ -1179,6 +1212,7 @@
       WoDS.interactiveDirichlet(document.getElementById('i0'));
       WoDS.interactiveNeumann(document.getElementById('i0b'));
       WoDS.interactiveBrownian(document.getElementById('ibrown'));
+      WoDS.interactiveDenoise(document.getElementById('idenoise'));
       WoDS.interactiveWalks(document.getElementById('i1'));
       WoDS.interactiveTiles(document.getElementById('i2'));
       WoDS.interactivePoissonKernel(document.getElementById('i3'));
