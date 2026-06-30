@@ -21,6 +21,13 @@
 
   const MAX_DRAW_STEPS = 600; // hard cap on points animated per walk
 
+  // Standard easing curves for the clean-mode jump animation.
+  const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const easeInOutCubic = (x) => x < 0.5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2;
+  // Fraction of each step spent fading the sphere in before the segment
+  // shoots across; the rest plays the eased segment ("hop").
+  const FADE_FRAC = 0.5;
+
   function init(root) {
     const theme = W.WoDS.themeFor(root);
     const canvas = root.querySelector('canvas.diagram');
@@ -29,6 +36,10 @@
     const obstLabel = root.querySelector('[data-role="obstacles-label"]');
     const avgLabel = root.querySelector('[data-role="avg"]');
     const resetBtn = root.querySelector('button[data-role="reset"]');
+    const speedSlider = root.querySelector('input[data-role="speed"]');
+    const speedLabel = root.querySelector('[data-role="speed-label"]');
+    const showJumpsCb = root.querySelector('input[data-role="show-jumps"]');
+    const cleanModeCb = root.querySelector('input[data-role="clean-mode"]');
 
     const W0 = 380, H0 = 380;
     const ctx = U.fitCanvas(canvas, W0, H0);
@@ -43,6 +54,13 @@
     let history = []; // recent walk lengths
     let activeWalk = null;
     let userOrigin = null; // [x,y] in [0,1]^2 if user has pinned an origin
+    // Animation speed multiplier (1 = baseline 30ms/step). The slider is
+    // log-scaled: its value is log10(speed), so speed = 10^value.
+    let speed = speedSlider ? Math.pow(10, parseFloat(speedSlider.value)) : 1;
+    // showJumps: dot every visited jump position. cleanMode: animate each
+    // jump as a sphere fade-in followed by an eased segment "hop".
+    let showJumps = showJumpsCb ? showJumpsCb.checked : false;
+    let cleanMode = cleanModeCb ? cleanModeCb.checked : false;
 
     function isInsideObstacle(x, y) {
       for (const rt of scene.rects) {
@@ -86,8 +104,26 @@
       if (!w || !w.points) return;
       const pts = w.points;
       const upTo = w.pointsShown;
+      const growing = upTo < pts.length;
+      // Within-step progress [0,1] of the currently-growing segment.
+      const u = (w.subProgress == null) ? 1 : w.subProgress;
+
+      // Clean mode plays each jump as two phases: the sphere fades in
+      // (tip paused at the current point), then the segment shoots across
+      // to the next point on an ease curve. In normal mode the sphere is
+      // fully drawn and the segment isn't (the sphere shows the next hop).
+      let segFrac, leadAlpha;
+      if (cleanMode && growing) {
+        if (u < FADE_FRAC) { segFrac = 0; leadAlpha = easeOutCubic(u / FADE_FRAC); }
+        else { segFrac = easeInOutCubic((u - FADE_FRAC) / (1 - FADE_FRAC)); leadAlpha = 1; }
+      } else {
+        segFrac = cleanMode ? 1 : 0;
+        leadAlpha = 1;
+      }
 
       ctx.save();
+
+      // Sphere overlays — the WoS/WoSt construction (kept in both modes).
       ctx.fillStyle = theme.accent;
       ctx.strokeStyle = theme.accent;
       for (let i = 0; i < upTo - 1; i++) {
@@ -105,18 +141,18 @@
         ctx.arc(cs[0], cs[1], r, 0, Math.PI*2);
         ctx.stroke();
       }
-
-      if (upTo < pts.length) {
+      if (growing) {
+        // Leading sphere — fades in during the clean-mode hop.
         const cur = pts[upTo - 1], nxt = pts[upTo];
         const r = Math.hypot(nxt[0]-cur[0], nxt[1]-cur[1]) * W0;
         if (r >= 1) {
           const cs = toScreen(cur);
-          ctx.globalAlpha = alpha * 0.12;
+          ctx.globalAlpha = alpha * 0.12 * leadAlpha;
           ctx.fillStyle = theme.accent;
           ctx.beginPath();
           ctx.arc(cs[0], cs[1], r, 0, Math.PI*2);
           ctx.fill();
-          ctx.globalAlpha = alpha * 0.55;
+          ctx.globalAlpha = alpha * 0.55 * leadAlpha;
           ctx.strokeStyle = theme.accent;
           ctx.lineWidth = 1;
           ctx.beginPath();
@@ -125,6 +161,8 @@
         }
       }
 
+      // Trajectory polyline through the points reached so far, plus the
+      // eased leading segment (clean mode).
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = theme.walk;
       ctx.lineWidth = 1.2;
@@ -135,13 +173,32 @@
         const p = toScreen(pts[i]);
         ctx.lineTo(p[0], p[1]);
       }
+      let tip;
+      if (growing && segFrac > 0) {
+        const a = pts[upTo - 1], b = pts[upTo];
+        tip = toScreen([a[0] + (b[0]-a[0])*segFrac, a[1] + (b[1]-a[1])*segFrac]);
+        ctx.lineTo(tip[0], tip[1]);
+      } else {
+        tip = toScreen(pts[upTo - 1]);
+      }
       ctx.stroke();
 
-      const last = toScreen(pts[Math.min(upTo, pts.length) - 1]);
+      // Particle dot at the leading tip.
       ctx.fillStyle = theme.walk;
       ctx.beginPath();
-      ctx.arc(last[0], last[1], 3, 0, Math.PI*2);
+      ctx.arc(tip[0], tip[1], 3, 0, Math.PI*2);
       ctx.fill();
+
+      // Every visited jump position as a small dot.
+      if (showJumps) {
+        ctx.fillStyle = theme.walk;
+        for (let i = 0; i < upTo; i++) {
+          const p = toScreen(pts[i]);
+          ctx.beginPath();
+          ctx.arc(p[0], p[1], 2.2, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
       ctx.restore();
     }
 
@@ -236,6 +293,20 @@
     });
     obstSlider.addEventListener('input', rebuildScene);
     resetBtn.addEventListener('click', () => { history = []; activeWalk = null; });
+    if (speedSlider) {
+      const applySpeed = () => {
+        speed = Math.pow(10, parseFloat(speedSlider.value));
+        if (speedLabel) speedLabel.textContent = `${speed.toFixed(2)}×`;
+      };
+      speedSlider.addEventListener('input', applySpeed);
+      applySpeed();
+    }
+    if (showJumpsCb) {
+      showJumpsCb.addEventListener('change', () => { showJumps = showJumpsCb.checked; });
+    }
+    if (cleanModeCb) {
+      cleanModeCb.addEventListener('change', () => { cleanMode = cleanModeCb.checked; });
+    }
 
     // Background walks on a self-chaining timeout: if a single walk
     // is slow, the next one fires later instead of piling up behind
@@ -259,13 +330,17 @@
         if (activeWalk) activeWalk.t0 = t;
       }
       if (activeWalk) {
+        const msPerStep = 30 / speed;
         const elapsed = Math.max(0, t - activeWalk.t0);
+        const prog = elapsed / msPerStep; // fractional step count
         const stepsToShow = Math.min(activeWalk.points.length,
-                                     Math.max(1, 1 + Math.floor(elapsed / 30)));
+                                     Math.max(1, 1 + Math.floor(prog)));
         activeWalk.pointsShown = stepsToShow;
+        activeWalk.subProgress = (stepsToShow < activeWalk.points.length)
+          ? prog - Math.floor(prog) : 1;
         drawWalk(activeWalk, 1);
         if (stepsToShow >= activeWalk.points.length) {
-          if (elapsed > activeWalk.points.length * 30 + 400) activeWalk = null;
+          if (elapsed > activeWalk.points.length * msPerStep + 400) activeWalk = null;
         }
       }
       if (userOrigin) {

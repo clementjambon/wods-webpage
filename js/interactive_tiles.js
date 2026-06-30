@@ -23,6 +23,8 @@
     const tileLabel = root.querySelector('[data-role="tiles-label"]');
     const avgLabel = root.querySelector('[data-role="avg"]');
     const resetBtn = root.querySelector('button[data-role="reset"]');
+    const speedSlider = root.querySelector('input[data-role="speed"]');
+    const speedLabel = root.querySelector('[data-role="speed-label"]');
 
     const W0 = 380, H0 = 380;
     const ctx = U.fitCanvas(canvas, W0, H0);
@@ -36,6 +38,9 @@
     const showWalksCb = root.querySelector('input[data-role="show-walks"]');
     let showInterfaces = showIfaceCb ? showIfaceCb.checked : true;
     let showWalks = showWalksCb ? showWalksCb.checked : true;
+    // Animation speed multiplier (1 = baseline 18ms/step). The slider is
+    // log-scaled: its value is log10(speed), so speed = 10^value.
+    let speed = speedSlider ? Math.pow(10, parseFloat(speedSlider.value)) : 1;
     // Animated reveal of the interface grid, eased toward showInterfaces.
     let ifaceReveal = showInterfaces ? 1 : 0;
 
@@ -224,6 +229,15 @@
       showWalksCb.addEventListener('change', () => { showWalks = showWalksCb.checked; });
     }
 
+    if (speedSlider) {
+      const applySpeed = () => {
+        speed = Math.pow(10, parseFloat(speedSlider.value));
+        if (speedLabel) speedLabel.textContent = `${speed.toFixed(2)}×`;
+      };
+      speedSlider.addEventListener('input', applySpeed);
+      applySpeed();
+    }
+
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
         history = [];
@@ -266,8 +280,8 @@
       for (let i = activeWalks.length - 1; i >= 0; i--) {
         const w = activeWalks[i];
         const elapsed = t - w.t0;
-        // Step every 18ms; faster tiles → quick walks anyway
-        const step = Math.min(w.points.length, 1 + Math.floor(elapsed / 18));
+        // Step every 18ms at 1×; the speed slider scales this.
+        const step = Math.min(w.points.length, 1 + Math.floor(elapsed / (18 / speed)));
         w.pointsShown = step;
         if (showWalks) drawWalkSpheres(w, 1);
         if (step >= w.points.length) {

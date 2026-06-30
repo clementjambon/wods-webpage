@@ -325,10 +325,16 @@
               </div>
               <label style="margin-top:14px;">Neumann obstacles: <span data-role="obstacles-label">10</span></label>
               <input type="range" data-role="obstacles" min="0" max="12" step="1" value="10" />
+              <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1.00×</span></label>
+              <input type="range" data-role="speed" min="-2" max="0" step="0.02" value="0" />
               <div class="stat" data-role="avg">Avg steps: —</div>
               <div class="legend">
                 <span><i style="background:var(--color-dirichlet)"></i> Dirichlet (absorbing)</span>
                 <span><i style="background:var(--color-neumann)"></i> Neumann (reflecting)</span>
+              </div>
+              <div class="checks">
+                <label><input type="checkbox" data-role="show-jumps"> Show jump positions</label>
+                <label><input type="checkbox" data-role="clean-mode"> Clean mode (animated segments)</label>
               </div>
               <label style="margin-top:14px;">Walk-length histogram (log)</label>
               <canvas class="hist"></canvas>
@@ -412,6 +418,8 @@
               </div>
               <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">1×1</span></label>
               <input type="range" data-role="tiles" min="1" max="12" step="1" value="6" />
+              <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1.00×</span></label>
+              <input type="range" data-role="speed" min="-2" max="0" step="0.02" value="0" />
               <div class="stat" data-role="avg">Avg steps: —</div>
               <div class="legend">
                 <span><i style="background:var(--color-dirichlet)"></i> "Physical" Dirichlet (absorbing)</span>
