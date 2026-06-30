@@ -246,7 +246,7 @@
   function walkWoSt(scene, sx, sy, recordPath) {
     let x = sx, y = sy;
     const points = recordPath ? [[x, y]] : null;
-    const eps = C.epsilon;
+    const eps = (scene && scene.epsilon != null) ? scene.epsilon : C.epsilon;
     const rmin = C.rmin || eps;
     const maxSteps = C.maxSteps;
 
@@ -299,7 +299,7 @@
   function walkWoS(scene, sx, sy, recordPath) {
     let x = sx, y = sy;
     const points = recordPath ? [[x, y]] : null;
-    const eps = C.epsilon;
+    const eps = (scene && scene.epsilon != null) ? scene.epsilon : C.epsilon;
     const maxSteps = C.maxSteps;
 
     for (let s = 0; s < maxSteps; s++) {

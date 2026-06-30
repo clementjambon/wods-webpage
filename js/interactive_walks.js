@@ -40,6 +40,8 @@
     const speedLabel = root.querySelector('[data-role="speed-label"]');
     const showJumpsCb = root.querySelector('input[data-role="show-jumps"]');
     const cleanModeCb = root.querySelector('input[data-role="clean-mode"]');
+    const epsSlider = root.querySelector('input[data-role="epsilon"]');
+    const epsLabel = root.querySelector('[data-role="eps-label"]');
 
     const W0 = 380, H0 = 380;
     const ctx = U.fitCanvas(canvas, W0, H0);
@@ -61,6 +63,9 @@
     // jump as a sphere fade-in followed by an eased segment "hop".
     let showJumps = showJumpsCb ? showJumpsCb.checked : false;
     let cleanMode = cleanModeCb ? cleanModeCb.checked : false;
+    // ε-shell: walks are absorbed within this distance of the boundary.
+    // Slider is log-scaled to fixed decades (1e-3, 1e-2, 1e-1).
+    let epsilon = epsSlider ? Math.pow(10, parseInt(epsSlider.value)) : C.epsilon;
 
     function isInsideObstacle(x, y) {
       for (const rt of scene.rects) {
@@ -265,6 +270,7 @@
       obstLabel.textContent = `${n}`;
       scene = Sc.layout(n);
       scene.mode = solverMode;
+      scene.epsilon = epsilon;
       history = [];
       activeWalk = null;
       userOrigin = null;
@@ -306,6 +312,18 @@
     }
     if (cleanModeCb) {
       cleanModeCb.addEventListener('change', () => { cleanMode = cleanModeCb.checked; });
+    }
+    if (epsSlider) {
+      const applyEps = () => {
+        const v = parseInt(epsSlider.value);
+        epsilon = Math.pow(10, v);
+        if (epsLabel) epsLabel.textContent = `1e${v}`;
+        scene.epsilon = epsilon;
+        history = [];
+        activeWalk = null;
+      };
+      epsSlider.addEventListener('input', applyEps);
+      applyEps();
     }
 
     // Background walks on a self-chaining timeout: if a single walk
