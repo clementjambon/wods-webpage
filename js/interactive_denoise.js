@@ -139,8 +139,10 @@
 
     rateSlider.addEventListener('input', () => { speed = parseFloat(rateSlider.value) || 0.25; syncRate(); });
     if (playBtn) playBtn.addEventListener('click', () => { playing = !playing; syncBtn(); });
-    // Restart: clear back to noise and resume the denoise from scratch.
-    if (restartBtn) restartBtn.addEventListener('click', () => { resetField(); acc = 0; accumulate(1); playing = true; syncBtn(); });
+    // Restart: clear back to noise and start the denoise over. Preserve
+    // the current play/pause state — restarting while paused stays paused
+    // on the fresh-noise frame until you press Play.
+    if (restartBtn) restartBtn.addEventListener('click', () => { resetField(); acc = 0; accumulate(1); });
 
     // --- main loop ---
     function tick() {
