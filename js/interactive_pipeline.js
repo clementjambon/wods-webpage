@@ -21,7 +21,7 @@
   const S = W.WoDS.solver;
 
   function init(root) {
-    const theme = W.WoDS.theme();
+    const theme = W.WoDS.themeFor(root);
     const size = 380;
     const canvas = root.querySelector('canvas.diagram');
     const ctx = U.fitCanvas(canvas, size, size);
@@ -93,6 +93,13 @@
     let stage = parseInt(stageSlider.value);
     let T = parseInt(tilesSlider.value);
     let B = parseInt(subSlider.value);
+
+    // Animated reveal of the tile interfaces, eased toward whether the
+    // decomposition is active (stage >= 1). Mirrors the #i2 demo: each
+    // line both fades in and grows outward from its midpoint, staggered
+    // by index so the grid cascades into place rather than popping on.
+    let ifaceReveal = stage >= 1 ? 1 : 0;
+    function easeOut(x) { return 1 - Math.pow(1 - x, 3); }
 
     // ---- Boundary presets (mirrors the mixed-problem demo) -------
     // Each preset is a function f(i, j, N) → value in [-1, 1] used
@@ -222,7 +229,7 @@
     function drawObstacles() {
       const sc = scenes[sceneIdx].make();
       ctx.save();
-      ctx.fillStyle = 'rgba(42,95,184,0.10)';
+      ctx.fillStyle = theme.neumannFill;
       ctx.strokeStyle = theme.neumann;
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 4]);
@@ -249,16 +256,35 @@
     }
 
     function drawTileInterfaces() {
-      if (T < 2) return;
+      if (T < 2 || ifaceReveal <= 0.001) return;
+      // Ordered list of interface segments (vertical + horizontal per
+      // index, interleaved) so the cascade marches outward from center.
+      const segs = [];
+      for (let i = 1; i < T; i++) {
+        const t = i / T;
+        segs.push([t, 0, t, 1]); // vertical line x = t
+        segs.push([0, t, 1, t]); // horizontal line y = t
+      }
       ctx.save();
       ctx.strokeStyle = theme.interface;
       ctx.lineWidth = 1.4;
-      ctx.globalAlpha = 0.85;
-      for (let i = 1; i < T; i++) {
-        const t = i / T;
+      const n = segs.length;
+      const STAGGER = 0.5; // fraction of the timeline spread across lines
+      for (let k = 0; k < n; k++) {
+        const s = segs[k];
+        // Per-line progress, delayed by its index then eased.
+        const delay = n > 1 ? STAGGER * (k / (n - 1)) : 0;
+        const span = 1 - STAGGER;
+        let p = (ifaceReveal - delay) / (span || 1);
+        p = p < 0 ? 0 : p > 1 ? 1 : p;
+        const e = easeOut(p);
+        if (e <= 0.001) continue;
+        const ax = px(s[0]), ay = py(s[1]), bx = px(s[2]), by = py(s[3]);
+        const cx = (ax + bx) / 2, cy = (ay + by) / 2;
+        ctx.globalAlpha = 0.85 * e;
         ctx.beginPath();
-        ctx.moveTo(px(t), py(0)); ctx.lineTo(px(t), py(1));
-        ctx.moveTo(px(0), py(t)); ctx.lineTo(px(1), py(t));
+        ctx.moveTo(cx + (ax - cx) * e, cy + (ay - cy) * e);
+        ctx.lineTo(cx + (bx - cx) * e, cy + (by - cy) * e);
         ctx.stroke();
       }
       ctx.restore();
@@ -445,28 +471,46 @@
       // Re-stroke obstacle outlines on top of pixels so they remain visible.
       if (stage >= 4) drawObstacles();
 
-      if (stage >= 1) drawTileInterfaces();
+      if (ifaceReveal > 0.001) drawTileInterfaces();
       if (stage === 2) drawWalks(now || performance.now());
       if (stage >= 3) drawInterfaceCollocation();
 
       drawOuterBoundary();
     }
 
-    // ---- Animation loop (only active in stage 2) -----------------
-    let rafId = null, lastSpawn = 0;
+    // ---- Animation loop ------------------------------------------
+    // Runs while stage 2 walks are animating, OR while the interface
+    // reveal is still easing toward its target (so the cascade can play
+    // when crossing into/out of the decomposition stage).
+    let rafId = null, lastSpawn = 0, lastT = null;
+    function ifaceTarget() { return stage >= 1 ? 1 : 0; }
+    function needsAnimation() {
+      return stage === 2 || ifaceReveal !== ifaceTarget();
+    }
     function tick(t) {
-      if (stage === 2) {
-        if (walks.length < 5 && t - lastSpawn > 130) { spawnWalk(t); lastSpawn = t; }
-        render(t);
+      // Ease the interface reveal toward its target before drawing.
+      const dt = lastT == null ? 0 : t - lastT;
+      lastT = t;
+      const target = ifaceTarget();
+      const rate = dt / 600; // full reveal/hide in ~600ms
+      if (ifaceReveal < target) ifaceReveal = Math.min(target, ifaceReveal + rate);
+      else if (ifaceReveal > target) ifaceReveal = Math.max(target, ifaceReveal - rate);
+
+      if (stage === 2 && walks.length < 5 && t - lastSpawn > 130) {
+        spawnWalk(t); lastSpawn = t;
+      }
+      render(t);
+
+      if (needsAnimation()) {
         rafId = requestAnimationFrame(tick);
       } else {
         walks = []; ghostWalks = [];
-        render(t);
-        rafId = null;
+        rafId = null; lastT = null;
       }
     }
     function startLoopIfNeeded() {
-      if (stage === 2 && rafId === null) {
+      if (rafId === null && needsAnimation()) {
+        lastT = null;
         rafId = requestAnimationFrame(tick);
       }
     }
@@ -485,7 +529,7 @@
       cx.lineWidth = 1.5;
       cx.strokeRect(1, 1, pxs - 2, pxs - 2);
       const { circles, rects } = sc.make();
-      cx.fillStyle = 'rgba(42,95,184,0.15)';
+      cx.fillStyle = theme.neumannFill;
       cx.strokeStyle = theme.neumann;
       cx.lineWidth = 1;
       cx.setLineDash([3, 2]);

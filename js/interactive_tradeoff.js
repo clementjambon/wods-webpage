@@ -24,6 +24,9 @@
 
   function init(root) {
     const theme = W.WoDS.theme();
+    // Per-figure slide-palette overrides apply to the LEFT (domain) panel
+    // only; the right (plot) panel keeps the base theme.
+    const themeL = W.WoDS.themeFor(root);
     const size = 320;
     const cLeft = root.querySelector('canvas[data-role="domain"]');
     const cRight = root.querySelector('canvas[data-role="plot"]');
@@ -90,8 +93,8 @@
 
     function drawObstacles() {
       ctxL.save();
-      ctxL.fillStyle = 'rgba(42,95,184,0.10)';
-      ctxL.strokeStyle = theme.neumann;
+      ctxL.fillStyle = themeL.neumannFill;
+      ctxL.strokeStyle = themeL.neumann;
       ctxL.lineWidth = 2;
       ctxL.setLineDash([5, 4]);
       for (const c of SCENE.circles) {
@@ -152,7 +155,7 @@
 
     function drawOuterBoundary() {
       ctxL.save();
-      ctxL.strokeStyle = theme.dirichlet;
+      ctxL.strokeStyle = themeL.dirichlet;
       ctxL.lineWidth = 3;
       ctxL.strokeRect(1.5, 1.5, size - 3, size - 3);
       ctxL.restore();

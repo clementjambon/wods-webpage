@@ -56,6 +56,11 @@
     i2: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#3a609c' },
     i3: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
     subkernel: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
+    'pipeline-fig': { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#3a609c' },
+    'locality-fig': { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)' },
+    // tradeoff-fig: only the left (domain) panel is routed through themeFor;
+    // the right (plot) panel keeps the base theme.
+    'tradeoff-fig': { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)' },
   };
 
   // Base theme with any per-figure overrides applied. Pass the

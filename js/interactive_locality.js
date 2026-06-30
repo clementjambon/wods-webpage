@@ -11,7 +11,7 @@
   const U = W.WoDS.util;
 
   function init(root) {
-    const theme = W.WoDS.theme();
+    const theme = W.WoDS.themeFor(root);
     const size = 380;
     const canvas = root.querySelector('canvas.diagram');
     const ctx = U.fitCanvas(canvas, size, size);
@@ -133,7 +133,7 @@
 
     // ---- Drawing -----------------------------------------------------
     function drawObstacles(cx, scene, pxs) {
-      cx.fillStyle = 'rgba(42,95,184,0.10)';
+      cx.fillStyle = theme.neumannFill;
       cx.strokeStyle = theme.neumann;
       cx.lineWidth = 1.5;
       cx.setLineDash([5, 4]);
