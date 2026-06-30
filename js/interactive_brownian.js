@@ -87,6 +87,7 @@
     let landedT = 0;
 
     const dropBtn = root.querySelector('[data-role="drop"]');
+    const clearBtn = root.querySelector('[data-role="clear"]');
 
     function renderTex(el, src, fallback) {
       if (window.katex) {
@@ -126,6 +127,7 @@
     }
 
     if (dropBtn) dropBtn.addEventListener('click', startWalk);
+    if (clearBtn) clearBtn.addEventListener('click', goIdle);
 
     function gauss() {
       const u1 = Math.max(1e-9, Math.random());
