@@ -637,6 +637,67 @@
       return c;
     }
 
+    // Studio-only: export just the scene boundaries (outer Dirichlet
+    // square + Neumann obstacles) as a standalone SVG — no Poisson-kernel
+    // bars, no source x. Mirrors render()'s geometry into vector form.
+    if (document.body.classList.contains('studio')) {
+      const exportBtn = document.createElement('button');
+      exportBtn.type = 'button';
+      exportBtn.textContent = 'Export scene SVG';
+      exportBtn.style.marginTop = '10px';
+      (recomputeBtn ? recomputeBtn.parentNode : root).appendChild(exportBtn);
+      exportBtn.addEventListener('click', exportSceneSVG);
+    }
+
+    // Split a CSS color (hex or rgba) into a solid color + opacity, since
+    // some SVG consumers (e.g. Illustrator) don't parse rgba() fills.
+    function svgPaint(col) {
+      const m = /rgba?\(([^)]+)\)/.exec(col);
+      if (m) {
+        const p = m[1].split(',').map((s) => s.trim());
+        return { color: `rgb(${p[0]},${p[1]},${p[2]})`,
+                 opacity: p.length > 3 ? parseFloat(p[3]) : 1 };
+      }
+      return { color: col, opacity: 1 };
+    }
+
+    function exportSceneSVG() {
+      const P = 6;            // padding so the square's stroke isn't clipped
+      const S = SQ;          // square side in px (matches the canvas)
+      const dim = S + 2 * P;
+      const map = (x, y) => [P + x * S, P + (1 - y) * S];
+      const fill = svgPaint(theme.neumannFill);
+      const stroke = svgPaint(theme.neumann);
+      const dir = svgPaint(theme.dirichlet);
+      const out = [
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${dim}" height="${dim}" viewBox="0 0 ${dim} ${dim}">`,
+        `<rect x="${P}" y="${P}" width="${S}" height="${S}" fill="none" ` +
+          `stroke="${dir.color}" stroke-opacity="${dir.opacity}" stroke-width="3"/>`,
+      ];
+      const obst = (geom) =>
+        `${geom} fill="${fill.color}" fill-opacity="${fill.opacity}" ` +
+        `stroke="${stroke.color}" stroke-opacity="${stroke.opacity}" ` +
+        `stroke-width="2" stroke-dasharray="5,4"/>`;
+      for (const c of scene.circles) {
+        const [cx, cy] = map(c.cx, c.cy);
+        out.push(obst(`<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${(c.r * S).toFixed(2)}"`));
+      }
+      for (const r of scene.rects) {
+        const [x, y] = map(r.x0, r.y1);
+        out.push(obst(`<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" ` +
+          `width="${((r.x1 - r.x0) * S).toFixed(2)}" height="${((r.y1 - r.y0) * S).toFixed(2)}"`));
+      }
+      out.push('</svg>');
+      const blob = new Blob([out.join('\n')], { type: 'image/svg+xml' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'i3-scene.svg';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+
     rebuildParamControls();
     rebuildObstacles();
     ensureSourceOutsideObstacle();
