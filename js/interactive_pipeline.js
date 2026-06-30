@@ -99,7 +99,17 @@
     // line both fades in and grows outward from its midpoint, staggered
     // by index so the grid cascades into place rather than popping on.
     let ifaceReveal = stage >= 1 ? 1 : 0;
+    // Eased opacity for the interface collocation dots (stage >= 3) and the
+    // reconstructed interior pixels (stage >= 4), so those layers fade in/out
+    // when crossing the 2↔3 and 3↔4 boundaries instead of popping on.
+    let colloReveal = stage >= 3 ? 1 : 0;
+    let pixelReveal = stage >= 4 ? 1 : 0;
     function easeOut(x) { return 1 - Math.pow(1 - x, 3); }
+    function approach(cur, target, rate) {
+      if (cur < target) return Math.min(target, cur + rate);
+      if (cur > target) return Math.max(target, cur - rate);
+      return cur;
+    }
 
     // ---- Boundary presets (mirrors the mixed-problem demo) -------
     // Each preset is a function f(i, j, N) → value in [-1, 1] used
@@ -411,7 +421,9 @@
 
     function drawInterfaceCollocation() {
       // Only interior (between-tile) interfaces.
-      if (T < 2) return;
+      if (T < 2 || colloReveal <= 0.001) return;
+      ctx.save();
+      ctx.globalAlpha = easeOut(colloReveal);
       const N = T * B;
       const dotR = Math.max(2.0, Math.min(4.5, size / (N * 2.6)));
       // Vertical interior interfaces (x = i/T, i=1..T-1)
@@ -432,11 +444,15 @@
           drawCollocationDot(x, y, v, dotR);
         }
       }
+      ctx.restore();
     }
 
     function drawInteriorPixels() {
       // Render the reconstructed interior as an N×N pixel heatmap, with
       // each pixel = one B×B sub-tile cell colored by the FD solution.
+      if (pixelReveal <= 0.001) return;
+      ctx.save();
+      ctx.globalAlpha = easeOut(pixelReveal);
       const N = T * B;
       const cell = size / N;
       for (let j = 0; j < N; j++) {
@@ -450,6 +466,7 @@
           ctx.fillRect(i * cell, (N - 1 - j) * cell, cell + 0.6, cell + 0.6);
         }
       }
+      ctx.restore();
     }
 
     // ---- Render --------------------------------------------------
@@ -460,20 +477,21 @@
       ctx.fillStyle = theme.surface;
       ctx.fillRect(0, 0, size, size);
 
-      // Solve cache (stages 3-4 need it; cheap to keep warm always)
-      if (stage >= 3) solveIfNeeded();
+      // Solve cache (stages 3-4 need it; keep warm while their layers are
+      // still fading out after dropping below the stage threshold).
+      if (stage >= 3 || colloReveal > 0.001 || pixelReveal > 0.001) solveIfNeeded();
 
       // Stage 0: outer boundary + obstacles always
       drawObstacles();
 
       // Stage 4: pixels go *under* the interfaces and obstacle outline.
-      if (stage >= 4) drawInteriorPixels();
+      if (pixelReveal > 0.001) drawInteriorPixels();
       // Re-stroke obstacle outlines on top of pixels so they remain visible.
-      if (stage >= 4) drawObstacles();
+      if (pixelReveal > 0.001) drawObstacles();
 
       if (ifaceReveal > 0.001) drawTileInterfaces();
       if (stage === 2) drawWalks(now || performance.now());
-      if (stage >= 3) drawInterfaceCollocation();
+      if (colloReveal > 0.001) drawInterfaceCollocation();
 
       drawOuterBoundary();
     }
@@ -484,17 +502,22 @@
     // when crossing into/out of the decomposition stage).
     let rafId = null, lastSpawn = 0, lastT = null;
     function ifaceTarget() { return stage >= 1 ? 1 : 0; }
+    function colloTarget() { return stage >= 3 ? 1 : 0; }
+    function pixelTarget() { return stage >= 4 ? 1 : 0; }
     function needsAnimation() {
-      return stage === 2 || ifaceReveal !== ifaceTarget();
+      return stage === 2
+        || ifaceReveal !== ifaceTarget()
+        || colloReveal !== colloTarget()
+        || pixelReveal !== pixelTarget();
     }
     function tick(t) {
-      // Ease the interface reveal toward its target before drawing.
+      // Ease each layer's reveal toward its target before drawing.
       const dt = lastT == null ? 0 : t - lastT;
       lastT = t;
-      const target = ifaceTarget();
       const rate = dt / 600; // full reveal/hide in ~600ms
-      if (ifaceReveal < target) ifaceReveal = Math.min(target, ifaceReveal + rate);
-      else if (ifaceReveal > target) ifaceReveal = Math.max(target, ifaceReveal - rate);
+      ifaceReveal = approach(ifaceReveal, ifaceTarget(), rate);
+      colloReveal = approach(colloReveal, colloTarget(), rate);
+      pixelReveal = approach(pixelReveal, pixelTarget(), rate);
 
       if (stage === 2 && walks.length < 5 && t - lastSpawn > 130) {
         spawnWalk(t); lastSpawn = t;
