@@ -24,6 +24,12 @@
     const X0 = PAD, Y0 = PAD, X1 = W0 - PAD, Y1 = H0 - PAD_BOTTOM;
     const SW = X1 - X0, SH = Y1 - Y0;
 
+    // The extra bottom padding holds the u(x) = E[g(Z_tau)] equation,
+    // which is an HTML overlay and so is absent from the recording. When
+    // capturing, nudge everything down by half that surplus so the square
+    // sits vertically centered in the exported frame.
+    const CAP_SHIFT_Y = (PAD_BOTTOM - PAD) / 2;
+
     // g around the perimeter, parameterized by arc length s in [0,1).
     function gAtS(s) {
       return Math.cos(2 * Math.PI * s);
@@ -281,30 +287,27 @@
     let lastStep = 0;
     function tick(t) {
       ctx.clearRect(0, 0, W0, H0);
+
+      ctx.save();
+      if (W.WoDS.captureMode) ctx.translate(0, CAP_SHIFT_Y);
       drawBoundary();
       drawTrail();
 
-      if (phase === 'idle') {
-        // In capture mode there is no one to press the button, so keep
-        // the recording self-driving by dropping a particle on its own.
-        if (W.WoDS.captureMode) { startWalk(); lastStep = t; }
-      } else if (phase === 'walking') {
+      if (phase === 'walking') {
         const dt = t - lastStep;
         const n = Math.min(8, Math.max(1, Math.floor(dt / 4)));
         for (let i = 0; i < n; i++) step();
         lastStep = t;
-      } else if (phase === 'landed') {
-        // Auto-loop only while recording; interactively the walk stays
-        // put until the user drops another particle.
-        if (W.WoDS.captureMode && t - landedT > 1100) {
-          startWalk();
-          lastStep = t;
-        }
       }
+      // idle/landed: the walk is fully button-driven, including while
+      // recording, so you can time the drop against the capture. Capture
+      // mode stays on only to render the canvas x / Z_tau labels.
 
       drawDots();
-      syncLabelVisibility();
       if (W.WoDS.captureMode) drawCaptureLabels(t);
+      ctx.restore();
+
+      syncLabelVisibility();
       requestAnimationFrame(tick);
     }
 
