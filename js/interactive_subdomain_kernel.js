@@ -31,12 +31,15 @@
     const statusLabel = root.querySelector('[data-role="status"]');
     const recomputeBtn = root.querySelector('button[data-role="recompute"]');
     const toggle = root.querySelector('[data-role="solver-toggle"]');
+    const showKernelCb = root.querySelector('input[data-role="show-kernel"]');
 
     const W0 = 360, H0 = 360, PAD = 56, SQ = W0 - 2 * PAD;
     const dctx = U.fitCanvas(decompCanvas, W0, H0);
     const kctx = U.fitCanvas(kernelCanvas, W0, H0);
 
     let solverMode = toggle ? toggle.querySelector('input:checked').value : 'wost';
+    // Toggles the source x and the kernel histogram together on the right pane.
+    let showKernel = showKernelCb ? showKernelCb.checked : true;
 
     const baseScene = Sc.layout(12); // Dirichlet walls + 12 Neumann rects
     let n = parseInt(tileSlider.value);
@@ -237,6 +240,9 @@
       kctx.strokeRect(o[0], o[1], SQ, SQ);
       drawObstacles(kctx, localScene.rects);
 
+      // The source x and the kernel histogram toggle together.
+      if (!showKernel) return;
+
       // Poisson-kernel bars along the perimeter (same scheme as I3).
       const N = Math.max(1, totalSamples);
       const binWidthScene = 4 / NBINS;
@@ -361,6 +367,9 @@
       });
     }
     if (recomputeBtn) recomputeBtn.addEventListener('click', moreSamples);
+    if (showKernelCb) {
+      showKernelCb.addEventListener('change', () => { showKernel = showKernelCb.checked; });
+    }
 
     // Studio-only: export either pane's boundaries as an SVG — the
     // selected subdomain (right) or the whole decomposition with the
