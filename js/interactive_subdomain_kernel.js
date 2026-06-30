@@ -271,7 +271,8 @@
         kctx.fill();
       }
 
-      // Source point.
+      // Source point + its "x" label, drawn on the canvas (not an HTML
+      // overlay) so it's captured when exporting video.
       const sp = toScreen(source.x, source.y);
       kctx.save();
       kctx.fillStyle = theme.walk;
@@ -281,6 +282,23 @@
       kctx.arc(sp[0], sp[1], 6, 0, Math.PI * 2);
       kctx.fill();
       kctx.stroke();
+      kctx.restore();
+      drawSourceX(sp[0] + 12, sp[1] - 10);
+    }
+
+    // In-canvas italic "x" beside the source, in KaTeX's math font with a
+    // white halo (mirrors the HTML overlay used elsewhere, but rendered on
+    // the canvas so the video capture includes it).
+    function drawSourceX(cx, cy) {
+      kctx.save();
+      kctx.textBaseline = 'middle';
+      kctx.textAlign = 'left';
+      kctx.font = 'italic 20px KaTeX_Math, Georgia, "Times New Roman", serif';
+      const x0 = cx - kctx.measureText('x').width / 2;
+      kctx.fillStyle = theme.text;
+      kctx.shadowColor = theme.surface;
+      kctx.shadowBlur = 3;
+      for (let k = 0; k < 3; k++) kctx.fillText('x', x0, cy);
       kctx.restore();
     }
 
