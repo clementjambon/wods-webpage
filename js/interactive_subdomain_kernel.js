@@ -56,7 +56,8 @@
     const source = { x: 0.5, y: 0.5 };
     const prob = new Float32Array(NBINS);
     let totalSamples = 0;
-    let estimating = false, raf = 0;
+    let estimating = false;
+    let cap = TARGET_SAMPLES; // sample target for the current estimate
 
     function toScreen(x, y) { return [PAD + x * SQ, PAD + (1 - y) * SQ]; }
 
@@ -136,14 +137,20 @@
 
     function resetEstimate() {
       clearBins();
-      cancelAnimationFrame(raf);
+      cap = TARGET_SAMPLES;
       estimating = true;
-      runChunk();
     }
 
-    function accumulate(limit) {
+    function moreSamples() {
+      cap = totalSamples + 8000;
+      estimating = true;
+    }
+
+    // Accumulate a time-budgeted batch of samples for the current frame.
+    function stepEstimate() {
+      if (!estimating) return;
       const t0 = performance.now();
-      while (totalSamples < limit && performance.now() - t0 < CHUNK_BUDGET_MS) {
+      while (totalSamples < cap && performance.now() - t0 < CHUNK_BUDGET_MS) {
         const r = S.walk(localScene, source.x, source.y, false);
         if (r.kind === 'D') {
           const s = paramOnPerimeter(r.endX, r.endY);
@@ -154,28 +161,20 @@
       }
       if (statusLabel) {
         statusLabel.textContent =
-          `P(x, ·) — samples: ${totalSamples}${totalSamples < limit ? ' …' : ''}`;
+          `P(x, ·) — samples: ${totalSamples}${totalSamples < cap ? ' …' : ''}`;
       }
+      if (totalSamples >= cap) estimating = false;
+    }
+
+    // Persistent paint loop. Both canvases are redrawn every frame so a
+    // resolution boost from the capture tool — capture.js re-fits the
+    // canvas, which clears its backing store — is repainted immediately
+    // instead of leaving a blank white canvas. It also drives sampling.
+    function frame() {
+      stepEstimate();
+      drawDecomp();
       renderKernel();
-    }
-
-    function runChunk() {
-      if (!estimating) return;
-      accumulate(TARGET_SAMPLES);
-      if (totalSamples < TARGET_SAMPLES) raf = requestAnimationFrame(runChunk);
-      else estimating = false;
-    }
-
-    function moreSamples() {
-      const cap = totalSamples + 8000;
-      estimating = true;
-      function chunk() {
-        if (!estimating) return;
-        accumulate(cap);
-        if (totalSamples < cap) raf = requestAnimationFrame(chunk);
-        else estimating = false;
-      }
-      raf = requestAnimationFrame(chunk);
+      requestAnimationFrame(frame);
     }
 
     // ---- Rendering --------------------------------------------------
@@ -450,7 +449,7 @@
 
     if (tileLabel) tileLabel.textContent = `${n}×${n}`;
     rebuildLocalScene();
-    drawDecomp();
+    requestAnimationFrame(frame);
   }
 
   W.WoDS.interactiveSubdomainKernel = init;
