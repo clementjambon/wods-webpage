@@ -202,6 +202,66 @@
       }
     }
 
+    // Canvas-drawn equivalents of the HTML overlay labels, used only
+    // while recording (W.WoDS.captureMode) since the HTML overlays live
+    // outside the canvas and aren't captured. Uses KaTeX's math font
+    // (loaded via the KaTeX stylesheet) so it matches the live labels,
+    // with a white halo standing in for their drop-shadow.
+    function drawMathLabel(cx, cy, main, sub, alpha) {
+      const mainFont = 'italic 20px KaTeX_Math, Georgia, "Times New Roman", serif';
+      const subFont = 'italic 13px KaTeX_Math, Georgia, "Times New Roman", serif';
+      ctx.save();
+      ctx.globalAlpha = alpha == null ? 1 : alpha;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      ctx.font = mainFont;
+      const wMain = ctx.measureText(main).width;
+      let wSub = 0;
+      if (sub) { ctx.font = subFont; wSub = ctx.measureText(sub).width; }
+      const x0 = cx - (wMain + wSub) / 2;
+      ctx.fillStyle = theme.text;
+      ctx.shadowColor = theme.surface;
+      ctx.shadowBlur = 3;
+      // Stroke the dark glyphs a few times so the white shadow builds
+      // up into a legible halo (mirrors the triple HTML drop-shadow).
+      for (let k = 0; k < 3; k++) {
+        ctx.font = mainFont;
+        ctx.fillText(main, x0, cy);
+        if (sub) { ctx.font = subFont; ctx.fillText(sub, x0 + wMain, cy + 6); }
+      }
+      ctx.restore();
+    }
+
+    function drawCaptureLabels(t) {
+      // x beside the start point (mirrors x-label at sx+12, sy-10).
+      const s = uvToScreen(START[0], START[1]);
+      drawMathLabel(s[0] + 12, s[1] - 10, 'x', null, 1);
+      // Z_τ at the landing point (mirrors positionLabel + its fade-in).
+      if (phase === 'landed' && landedAt) {
+        const [sx, sy] = uvToScreen(landedAt[0], landedAt[1]);
+        const OFF = 18;
+        let lx = sx, ly = sy;
+        if (landedAt[0] < 0.02) lx = sx - OFF;
+        else if (landedAt[0] > 0.98) lx = sx + OFF;
+        if (landedAt[1] < 0.02) ly = sy + OFF;
+        else if (landedAt[1] > 0.98) ly = sy - OFF;
+        const a = Math.min(1, (t - landedT) / 120);
+        drawMathLabel(lx, ly, 'Z', 'τ', a);
+      }
+    }
+
+    // Show/hide the HTML overlay labels to match capture mode so they
+    // don't double up with the canvas-drawn versions on screen.
+    let _capState = null;
+    function syncLabelVisibility() {
+      const cap = !!W.WoDS.captureMode;
+      if (cap === _capState) return;
+      _capState = cap;
+      const vis = cap ? 'hidden' : '';
+      xLabel.style.visibility = vis;
+      label.style.visibility = vis;
+    }
+
     let lastStep = 0;
     function tick(t) {
       ctx.clearRect(0, 0, W0, H0);
@@ -221,6 +281,8 @@
       }
 
       drawDots();
+      syncLabelVisibility();
+      if (W.WoDS.captureMode) drawCaptureLabels(t);
       requestAnimationFrame(tick);
     }
 

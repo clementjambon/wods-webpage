@@ -86,6 +86,12 @@
     const restore = boost(canvas);
     const mime = pickMime();
 
+    // Signal capture mode so figures can swap HTML overlay labels (which
+    // live outside the canvas and thus aren't recorded) for canvas-drawn
+    // equivalents. Figures read W.WoDS.captureMode each frame; it's a
+    // no-op for figures that don't use overlays.
+    W.WoDS.captureMode = true;
+
     // The figure canvases clear to transparent (clearRect), so capturing
     // them directly yields a video with an alpha channel that reads as
     // black on a slide. Instead, composite each frame onto an opaque
@@ -114,6 +120,7 @@
     rec.onstop = () => {
       if (copyRaf) W.cancelAnimationFrame(copyRaf);
       restore();
+      W.WoDS.captureMode = false;
       stream.getTracks().forEach((t) => t.stop());
       const blob = new Blob(chunks, { type: mime });
       const a = document.createElement('a');
