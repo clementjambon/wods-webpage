@@ -314,6 +314,38 @@
     </section>
 
     <section class="studio-item">
+      <h3 class="studio-label">#subkernel · WoDS.interactiveSubdomainKernel</h3>
+    <figure class="figure" id="subkernel">
+          <div class="figure-body">
+            <div class="canvas-wrap">
+              <div class="canvas-row" style="justify-content:center;">
+                <div class="canvas-col"><canvas class="diagram" data-role="decomp"></canvas></div>
+                <div class="canvas-col"><canvas class="diagram" data-role="kernel"></canvas></div>
+                <div class="controls">
+                  <label>Solver</label>
+                  <div class="solver-toggle" data-role="solver-toggle">
+                    <label><input type="radio" name="subk-solver" value="wost" checked><span>WoSt</span></label>
+                    <label><input type="radio" name="subk-solver" value="wos"><span>WoS</span></label>
+                  </div>
+                  <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">4×4</span></label>
+                  <input type="range" data-role="tiles" min="2" max="10" step="1" value="4" />
+                  <div class="stat" data-role="status">Estimating P(x, ·)…</div>
+                  <button data-role="recompute">Add more MC samples</button>
+                  <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click a tile on the
+                    left to pick a subdomain; drag the source $x$ on the right. The right panel shows that subdomain's
+                    local Poisson kernel.</p>
+                </div>
+              </div>
+            </div>
+            <div class="figure-caption"><b>Subdomain Poisson kernel.</b> Picking one tile of the decomposition (left)
+              and estimating its local first-passage solution operator (right). Every tile edge — whether physical
+              Dirichlet boundary or an artificial interface — acts as an absorbing exit, while interior obstacles stay
+              Neumann.</div>
+          </div>
+        </figure>
+    </section>
+
+    <section class="studio-item">
       <h3 class="studio-label">#amc-anim · WoDS.autoMarkov</h3>
     <figure class="figure" id="amc-anim">
           <div class="figure-body">
@@ -549,6 +581,7 @@
   <script src="js/interactive_tiles.js"></script>
   <script src="js/interactive_poisson_kernel.js"></script>
   <script src="js/interactive_poisson_solution.js"></script>
+  <script src="js/interactive_subdomain_kernel.js"></script>
   <script src="js/interactive_markov.js"></script>
   <script src="js/interactive_pipeline.js"></script>
   <script src="js/interactive_tradeoff.js"></script>
@@ -567,6 +600,7 @@
       { const el = document.getElementById('i2'); if (el) WoDS.interactiveTiles(el); }
       { const el = document.getElementById('i3'); if (el) WoDS.interactivePoissonKernel(el); }
       { const el = document.getElementById('i3b'); if (el) WoDS.interactivePoissonSolution(el); }
+      { const el = document.getElementById('subkernel'); if (el) WoDS.interactiveSubdomainKernel(el); }
       { const el = document.getElementById('amc-anim'); if (el) WoDS.autoMarkov(el); }
       { const el = document.getElementById('imc'); if (el) WoDS.interactiveMarkov(el); }
       { const el = document.getElementById('pipeline-fig'); if (el) WoDS.interactivePipeline(el); }
