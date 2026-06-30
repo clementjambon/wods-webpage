@@ -52,9 +52,9 @@
     // Slide palette: Dirichlet + Neumann both black (Neumann still
     // distinguished by its dashed stroke and grey fill); WoS
     // trajectory segments a dark blue instead of black.
-    i1: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#16357a' },
-    i2: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#16357a' },
-    i3: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#16357a' },
+    i1: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#3a609c' },
+    i2: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#3a609c' },
+    i3: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
   };
 
   // Base theme with any per-figure overrides applied. Pass the
