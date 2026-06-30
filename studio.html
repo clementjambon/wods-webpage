@@ -352,6 +352,51 @@
     </section>
 
     <section class="studio-item">
+      <h3 class="studio-label">#binop · WoDS.interactiveBinnedOperator <a class="studio-open" data-only="binop" href="?only=binop">open standalone ↗</a></h3>
+    <figure class="figure" id="binop">
+          <div class="figure-body">
+            <div class="canvas-wrap">
+              <div class="canvas-row" style="justify-content:center;">
+                <div class="canvas-col"><canvas class="diagram" data-role="decomp"></canvas></div>
+                <div class="canvas-col"><canvas class="diagram" data-role="operator"></canvas></div>
+                <div class="controls">
+                  <label>Solver</label>
+                  <div class="solver-toggle" data-role="solver-toggle">
+                    <label><input type="radio" name="binop-solver" value="wost" checked><span>WoSt</span></label>
+                    <label><input type="radio" name="binop-solver" value="wos"><span>WoS</span></label>
+                  </div>
+                  <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">4×4</span></label>
+                  <input type="range" data-role="tiles" min="2" max="10" step="1" value="4" />
+                  <label style="margin-top:14px;">Binning resolution: <span data-role="res-label">4×4</span></label>
+                  <input type="range" data-role="res" min="2" max="10" step="1" value="4" />
+                  <label style="margin-top:14px;">Samples / bucket: <span data-role="samples-label">1000</span></label>
+                  <input type="range" data-role="samples" min="100" max="10000" step="100" value="1000" />
+                  <button data-role="precompute">Precompute operator</button>
+                  <div data-role="progress" style="display:none; margin-top:10px;">
+                    <div style="height:8px; background:var(--color-rule); border-radius:4px; overflow:hidden;">
+                      <div data-role="progress-fill" style="height:100%; width:0%; background:var(--color-accent);"></div>
+                    </div>
+                    <div data-role="progress-text" style="font-size:0.72rem; color:var(--color-text-muted); margin-top:4px;"></div>
+                  </div>
+                  <div class="stat" data-role="status" style="margin-top:10px;">Pick a subdomain, then click “Precompute”.</div>
+                  <button data-role="toggle-grid">Hide subgrid</button>
+                  <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click a tile on the left to
+                    choose a subdomain, then Precompute its boundary first-passage histogram for every interior bucket
+                    (buckets inside the Neumann geometry are skipped). Drag $x$ — it snaps to the nearest bucket — to
+                    inspect each precomputed kernel. Nothing runs until you click Precompute.</p>
+                </div>
+              </div>
+            </div>
+            <div class="figure-caption"><b>Precomputed binned solution operator of a subdomain.</b> Pick a tile of the
+              decomposition (left); its interior is split into an $R\times R$ grid of buckets (right). For each bucket,
+              short Monte-Carlo walks estimate the first-passage distribution over the $R$ boundary bins per edge.
+              Dragging $x$ snaps to a bucket and shows its precomputed kernel — the subdomain's discrete solution
+              operator, one row at a time.</div>
+          </div>
+        </figure>
+    </section>
+
+    <section class="studio-item">
       <h3 class="studio-label">#amc-anim · WoDS.autoMarkov <a class="studio-open" data-only="amc-anim" href="?only=amc-anim">open standalone ↗</a></h3>
     <figure class="figure" id="amc-anim">
           <div class="figure-body">
@@ -588,6 +633,7 @@
   <script src="js/interactive_poisson_kernel.js"></script>
   <script src="js/interactive_poisson_solution.js"></script>
   <script src="js/interactive_subdomain_kernel.js"></script>
+  <script src="js/interactive_binned_operator.js"></script>
   <script src="js/interactive_markov.js"></script>
   <script src="js/interactive_pipeline.js"></script>
   <script src="js/interactive_tradeoff.js"></script>
@@ -629,6 +675,7 @@
       { const el = document.getElementById('i3'); if (el) WoDS.interactivePoissonKernel(el); }
       { const el = document.getElementById('i3b'); if (el) WoDS.interactivePoissonSolution(el); }
       { const el = document.getElementById('subkernel'); if (el) WoDS.interactiveSubdomainKernel(el); }
+      { const el = document.getElementById('binop'); if (el) WoDS.interactiveBinnedOperator(el); }
       { const el = document.getElementById('amc-anim'); if (el) WoDS.autoMarkov(el); }
       { const el = document.getElementById('imc'); if (el) WoDS.interactiveMarkov(el); }
       { const el = document.getElementById('pipeline-fig'); if (el) WoDS.interactivePipeline(el); }

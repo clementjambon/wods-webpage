@@ -590,6 +590,48 @@
       </div>
     </figure>
 
+    <figure class="figure" id="binop">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row" style="justify-content:center;">
+            <div class="canvas-col"><canvas class="diagram" data-role="decomp"></canvas></div>
+            <div class="canvas-col"><canvas class="diagram" data-role="operator"></canvas></div>
+            <div class="controls">
+              <label>Solver</label>
+              <div class="solver-toggle" data-role="solver-toggle">
+                <label><input type="radio" name="binop-solver" value="wost" checked><span>WoSt</span></label>
+                <label><input type="radio" name="binop-solver" value="wos"><span>WoS</span></label>
+              </div>
+              <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">4×4</span></label>
+              <input type="range" data-role="tiles" min="2" max="10" step="1" value="4" />
+              <label style="margin-top:14px;">Binning resolution: <span data-role="res-label">4×4</span></label>
+              <input type="range" data-role="res" min="2" max="10" step="1" value="4" />
+              <label style="margin-top:14px;">Samples / bucket: <span data-role="samples-label">1000</span></label>
+              <input type="range" data-role="samples" min="100" max="10000" step="100" value="1000" />
+              <button data-role="precompute">Precompute operator</button>
+              <div data-role="progress" style="display:none; margin-top:10px;">
+                <div style="height:8px; background:var(--color-rule); border-radius:4px; overflow:hidden;">
+                  <div data-role="progress-fill" style="height:100%; width:0%; background:var(--color-accent);"></div>
+                </div>
+                <div data-role="progress-text" style="font-size:0.72rem; color:var(--color-text-muted); margin-top:4px;"></div>
+              </div>
+              <div class="stat" data-role="status" style="margin-top:10px;">Pick a subdomain, then click “Precompute”.</div>
+              <button data-role="toggle-grid">Hide subgrid</button>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click a tile on the left to
+                choose a subdomain, then Precompute its boundary first-passage histogram for every interior bucket
+                (buckets inside the Neumann geometry are skipped). Drag $x$ — it snaps to the nearest bucket — to
+                inspect each precomputed kernel. Nothing runs until you click Precompute.</p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Precomputed binned solution operator of a subdomain.</b> Pick a tile of the
+          decomposition (left); its interior is split into an $R\times R$ grid of buckets (right). For each bucket,
+          short Monte-Carlo walks estimate the first-passage distribution over the $R$ boundary bins per edge.
+          Dragging $x$ snaps to a bucket and shows its precomputed kernel — the subdomain's discrete solution
+          operator, one row at a time.</div>
+      </div>
+    </figure>
+
     <p>As implied by the interactive figures above, there's a natural and simple way of precomputing and discretizing
       solution operators as a simple matrix $\mathbf{H}$<fn>Note that we do not claim that this is the most efficient
         way. There's huge room for improvement here!</fn>. As shown in the figure below, row-wise, $H_{ij}$ represents
@@ -1250,6 +1292,7 @@
   <script src="js/interactive_poisson_kernel.js"></script>
   <script src="js/interactive_poisson_solution.js"></script>
   <script src="js/interactive_subdomain_kernel.js"></script>
+  <script src="js/interactive_binned_operator.js"></script>
   <script src="js/interactive_markov.js"></script>
   <script src="js/interactive_pipeline.js"></script>
   <script src="js/interactive_tradeoff.js"></script>
@@ -1269,6 +1312,7 @@
       WoDS.interactivePoissonKernel(document.getElementById('i3'));
       WoDS.interactivePoissonSolution(document.getElementById('i3b'));
       WoDS.interactiveSubdomainKernel(document.getElementById('subkernel'));
+      WoDS.interactiveBinnedOperator(document.getElementById('binop'));
       WoDS.autoMarkov(document.getElementById('amc-anim'));
       WoDS.interactiveMarkov(document.getElementById('imc'));
       WoDS.interactivePipeline(document.getElementById('pipeline-fig'));
