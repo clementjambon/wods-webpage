@@ -15,7 +15,7 @@
   const S = W.WoDS.solver;
 
   function init(root) {
-    const theme = W.WoDS.theme();
+    const theme = W.WoDS.themeFor(root);
     const canvas = root.querySelector('canvas.diagram');
     const presetsDiv = root.querySelector('[data-role="scene-presets"]');
     const sigmaSlider = root.querySelector('input[data-role="sigma"]');
@@ -336,7 +336,7 @@
             ctx.fillStyle = theme.surface;
           } else {
             const t = Math.min(1, vals[k] / denom);
-            ctx.fillStyle = U.colormap(0.5 + 0.5 * t, theme);
+            ctx.fillStyle = U.colormap(0.5 - 0.5 * t, theme);
           }
           const px = PAD + i * cellW;
           const py = PAD + (Gy - 1 - j) * cellH;
@@ -345,7 +345,7 @@
       }
 
       // Obstacles.
-      ctx.fillStyle = 'rgba(42,95,184,0.10)';
+      ctx.fillStyle = theme.neumannFill;
       ctx.strokeStyle = theme.neumann;
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 4]);
@@ -463,7 +463,7 @@
       cx.lineWidth = 1.5;
       cx.strokeRect(1, 1, px - 2, px - 2);
       const { circles, rects } = sd.make();
-      cx.fillStyle = 'rgba(42,95,184,0.15)';
+      cx.fillStyle = theme.neumannFill;
       cx.strokeStyle = theme.neumann;
       cx.lineWidth = 1;
       cx.setLineDash([3, 2]);

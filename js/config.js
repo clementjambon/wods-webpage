@@ -55,6 +55,7 @@
     i1: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#3a609c' },
     i2: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#3a609c' },
     i3: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
+    i3b: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
     subkernel: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
     'pipeline-fig': { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#3a609c' },
     'locality-fig': { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)' },
