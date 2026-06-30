@@ -431,17 +431,10 @@
     }
 
     function exportDecompSVG() {
-      const { a, b, L } = tileBounds();
-      const hi = svgPaint('rgba(58,96,156,0.12)'); // selected-tile highlight
+      // Decomposition only — no selected-tile overlay (added by hand on the
+      // slide). Just the tile grid, outer Dirichlet square, and obstacles.
       const grid = svgPaint(theme.interface);
-      const acc = svgPaint(theme.accent);
-      const [tx, ty] = emap(a, b + L); // top-left of selected tile
-      const tw = L * ES;
       const out = [svgOpen()];
-      // Selected-tile highlight (behind everything).
-      out.push(`<rect x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" width="${tw.toFixed(2)}" ` +
-        `height="${tw.toFixed(2)}" fill="${hi.color}" fill-opacity="${hi.opacity}"/>`);
-      // Tile grid.
       for (let i = 1; i < n; i++) {
         const t = i / n;
         const [vx0, vy0] = emap(t, 0), [vx1, vy1] = emap(t, 1);
@@ -451,14 +444,8 @@
         out.push(`<line x1="${hx0.toFixed(2)}" y1="${hy0.toFixed(2)}" x2="${hx1.toFixed(2)}" ` +
           `y2="${hy1.toFixed(2)}" stroke="${grid.color}" stroke-opacity="${grid.opacity}" stroke-width="1.5"/>`);
       }
-      // Outer Dirichlet square + full Neumann obstacles.
-      out.push(svgOuterSquare(), ...svgObstacleRects(baseScene.rects));
-      // Selected-tile outline (on top).
-      out.push(`<rect x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" width="${tw.toFixed(2)}" ` +
-        `height="${tw.toFixed(2)}" fill="none" stroke="${acc.color}" ` +
-        `stroke-opacity="${acc.opacity}" stroke-width="2.5"/>`);
-      out.push('</svg>');
-      downloadSVG(out, `decomposition-${n}x${n}-tile-${sel.i}-${sel.j}.svg`);
+      out.push(svgOuterSquare(), ...svgObstacleRects(baseScene.rects), '</svg>');
+      downloadSVG(out, `decomposition-${n}x${n}.svg`);
     }
 
     if (tileLabel) tileLabel.textContent = `${n}×${n}`;
