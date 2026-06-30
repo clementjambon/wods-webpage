@@ -428,6 +428,7 @@
       }
       const targetMax = PAD - 12; // px — leave a small gap inside the canvas edge
       const barScale = maxDensity > 0 ? targetMax / maxDensity : 0;
+      const BAR_GAP = 2; // px the bar base sits outside the boundary stroke
 
       for (let b = 0; b < NBINS; b++) {
         const sMid = (b + 0.5) / NBINS * 4;
@@ -438,22 +439,24 @@
         const len = density[b] * barScale;
         if (len < 0.5) continue;
         const t = Math.min(1, density[b] / Math.max(maxDensity, 1e-9));
-        // Color from cool to hot via theme colormap.
-        ctx.fillStyle = U.colormap(0.5 + 0.5 * t, theme);
+        // Color via the cool (blue) half of the theme colormap.
+        ctx.fillStyle = U.colormap(0.5 - 0.5 * t, theme);
         ctx.strokeStyle = theme.dirichlet;
         ctx.lineWidth = 1;
         // Bar thickness in pixels: each perimeter bin spans 4/NBINS scene
         // units, which projects to 4*SQ/NBINS pixels along the edge.
         const wPx = (4 * SQ / NBINS) * 0.95;
-        // Rectangle from (px,py) extending outward by len, perpendicular to
-        // the edge tangent (the tangent is perpendicular to (sNx,sNy)).
+        // Rectangle starting just outside the boundary stroke (offset by
+        // BAR_GAP along the outward normal so it doesn't overlap the line)
+        // and extending outward by len, perpendicular to the edge tangent.
         const tx = -sNy, ty = sNx;
         const halfW = wPx * 0.5;
+        const bx = px + sNx * BAR_GAP, by = py + sNy * BAR_GAP;
         ctx.beginPath();
-        ctx.moveTo(px - tx * halfW, py - ty * halfW);
-        ctx.lineTo(px + tx * halfW, py + ty * halfW);
-        ctx.lineTo(px + tx * halfW + sNx * len, py + ty * halfW + sNy * len);
-        ctx.lineTo(px - tx * halfW + sNx * len, py - ty * halfW + sNy * len);
+        ctx.moveTo(bx - tx * halfW, by - ty * halfW);
+        ctx.lineTo(bx + tx * halfW, by + ty * halfW);
+        ctx.lineTo(bx + tx * halfW + sNx * len, by + ty * halfW + sNy * len);
+        ctx.lineTo(bx - tx * halfW + sNx * len, by - ty * halfW + sNy * len);
         ctx.closePath();
         ctx.fill();
       }

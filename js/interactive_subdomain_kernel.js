@@ -250,6 +250,7 @@
       const targetMax = PAD - 10;
       const barScale = maxD > 0 ? targetMax / maxD : 0;
       const wPx = (4 * SQ / NBINS) * 0.95;
+      const BAR_GAP = 2; // px the bar base sits outside the boundary stroke
       for (let b = 0; b < NBINS; b++) {
         const len = dens[b] * barScale;
         if (len < 0.5) continue;
@@ -258,13 +259,14 @@
         const [px, py] = toScreen(x, y);
         const sNx = nx, sNy = -ny;
         const t = Math.min(1, dens[b] / Math.max(maxD, 1e-9));
-        kctx.fillStyle = U.colormap(0.5 + 0.5 * t, theme);
+        kctx.fillStyle = U.colormap(0.5 - 0.5 * t, theme);
         const tx = -sNy, ty = sNx, halfW = wPx * 0.5;
+        const bx = px + sNx * BAR_GAP, by = py + sNy * BAR_GAP;
         kctx.beginPath();
-        kctx.moveTo(px - tx * halfW, py - ty * halfW);
-        kctx.lineTo(px + tx * halfW, py + ty * halfW);
-        kctx.lineTo(px + tx * halfW + sNx * len, py + ty * halfW + sNy * len);
-        kctx.lineTo(px - tx * halfW + sNx * len, py - ty * halfW + sNy * len);
+        kctx.moveTo(bx - tx * halfW, by - ty * halfW);
+        kctx.lineTo(bx + tx * halfW, by + ty * halfW);
+        kctx.lineTo(bx + tx * halfW + sNx * len, by + ty * halfW + sNy * len);
+        kctx.lineTo(bx - tx * halfW + sNx * len, by - ty * halfW + sNy * len);
         kctx.closePath();
         kctx.fill();
       }
