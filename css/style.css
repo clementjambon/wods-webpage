@@ -436,6 +436,15 @@ input[type="range"].colormap-slider.plain-slider {
 .controls .legend span { display: flex; align-items: center; gap: 6px; }
 .controls .legend i { display: inline-block; width: 14px; height: 4px; border-radius: 1px; }
 
+.controls .checks { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.controls .checks label {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0; padding: 0;
+  text-transform: none; letter-spacing: 0;
+  font-size: 0.82rem; color: var(--color-text); cursor: pointer;
+}
+.controls .checks input { margin: 0; cursor: pointer; }
+
 .controls .solver-toggle {
   display: inline-flex;
   border: 1px solid var(--color-rule);

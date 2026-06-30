@@ -32,6 +32,13 @@
     const toggle = root.querySelector('[data-role="solver-toggle"]');
     let solverMode = toggle ? (toggle.querySelector('input:checked').value) : 'wost';
 
+    const showIfaceCb = root.querySelector('input[data-role="show-interfaces"]');
+    const showWalksCb = root.querySelector('input[data-role="show-walks"]');
+    let showInterfaces = showIfaceCb ? showIfaceCb.checked : true;
+    let showWalks = showWalksCb ? showWalksCb.checked : true;
+    // Animated reveal of the interface grid, eased toward showInterfaces.
+    let ifaceReveal = showInterfaces ? 1 : 0;
+
     const baseScene = Sc.layout(12);
     let scene = withTiles(parseInt(tileSlider.value));
     let history = [];
@@ -49,18 +56,35 @@
       };
     }
 
+    function easeOut(x) { return 1 - Math.pow(1 - x, 3); }
+
     function drawScene() {
       ctx.clearRect(0,0,W0,H0);
 
-      // Tile grid
-      if (scene.tileInterfaces && scene.tileInterfaces.length > 0) {
+      // Tile grid. Reveal is animated: each line both fades in and
+      // grows outward from its midpoint, staggered by index so the grid
+      // cascades into place rather than popping on all at once.
+      const ifaces = scene.tileInterfaces;
+      if (ifaces && ifaces.length > 0 && ifaceReveal > 0.001) {
         ctx.strokeStyle = theme.interface;
-        ctx.lineWidth = 1;
-        ctx.globalAlpha = 0.5;
-        for (const t of scene.tileInterfaces) {
+        ctx.lineWidth = 1.5;
+        const n = ifaces.length;
+        const STAGGER = 0.5; // fraction of the timeline spread across lines
+        for (let i = 0; i < n; i++) {
+          const t = ifaces[i];
+          // Per-line progress, delayed by its index then eased.
+          const delay = n > 1 ? STAGGER * (i / (n - 1)) : 0;
+          const span = 1 - STAGGER;
+          let p = (ifaceReveal - delay) / (span || 1);
+          p = p < 0 ? 0 : p > 1 ? 1 : p;
+          const e = easeOut(p);
+          if (e <= 0.001) continue;
+          const ax = t.x0*W0, ay = (1-t.y0)*H0, bx = t.x1*W0, by = (1-t.y1)*H0;
+          const cx = (ax+bx)/2, cy = (ay+by)/2;
+          ctx.globalAlpha = 0.5 * e;
           ctx.beginPath();
-          ctx.moveTo(t.x0*W0, (1-t.y0)*H0);
-          ctx.lineTo(t.x1*W0, (1-t.y1)*H0);
+          ctx.moveTo(cx + (ax-cx)*e, cy + (ay-cy)*e);
+          ctx.lineTo(cx + (bx-cx)*e, cy + (by-cy)*e);
           ctx.stroke();
         }
         ctx.globalAlpha = 1;
@@ -193,6 +217,13 @@
       });
     }
 
+    if (showIfaceCb) {
+      showIfaceCb.addEventListener('change', () => { showInterfaces = showIfaceCb.checked; });
+    }
+    if (showWalksCb) {
+      showWalksCb.addEventListener('change', () => { showWalks = showWalksCb.checked; });
+    }
+
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
         history = [];
@@ -212,6 +243,13 @@
     });
 
     function tick(t) {
+      // Ease the interface reveal toward its target before drawing.
+      const target = showInterfaces ? 1 : 0;
+      const dt = t - (tick._lt || t); tick._lt = t;
+      const rate = dt / 600; // full reveal/hide in ~600ms
+      if (ifaceReveal < target) ifaceReveal = Math.min(target, ifaceReveal + rate);
+      else if (ifaceReveal > target) ifaceReveal = Math.max(target, ifaceReveal - rate);
+
       drawScene();
 
       // Ghost trails (fading)
@@ -221,7 +259,7 @@
         const alpha = Math.max(0, 0.45 * (1 - age / 1500));
         if (alpha <= 0) { ghostWalks.splice(i, 1); continue; }
         g.pointsShown = g.points.length;
-        drawWalkSpheres(g, alpha);
+        if (showWalks) drawWalkSpheres(g, alpha);
       }
 
       // Active walks
@@ -231,7 +269,7 @@
         // Step every 18ms; faster tiles → quick walks anyway
         const step = Math.min(w.points.length, 1 + Math.floor(elapsed / 18));
         w.pointsShown = step;
-        drawWalkSpheres(w, 1);
+        if (showWalks) drawWalkSpheres(w, 1);
         if (step >= w.points.length) {
           ghostWalks.push({ points: w.points, pointsShown: w.points.length, tEnd: t });
           activeWalks.splice(i, 1);
