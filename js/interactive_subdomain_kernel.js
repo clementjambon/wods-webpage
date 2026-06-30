@@ -363,17 +363,25 @@
     }
     if (recomputeBtn) recomputeBtn.addEventListener('click', moreSamples);
 
-    // Studio-only: export the selected subdomain's boundaries (outer
-    // absorbing square + clipped Neumann obstacles) as an SVG — no kernel
-    // bars, no source x. Same scheme as I3's export.
+    // Studio-only: export either pane's boundaries as an SVG — the
+    // selected subdomain (right) or the whole decomposition with the
+    // selected tile highlighted (left). No kernel bars, no source x.
     if (document.body.classList.contains('studio')) {
-      const exportBtn = document.createElement('button');
-      exportBtn.type = 'button';
-      exportBtn.textContent = 'Export subdomain SVG';
-      exportBtn.style.marginTop = '10px';
-      (recomputeBtn ? recomputeBtn.parentNode : root).appendChild(exportBtn);
-      exportBtn.addEventListener('click', exportSceneSVG);
+      const parent = recomputeBtn ? recomputeBtn.parentNode : root;
+      const mkBtn = (label, fn) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        b.style.marginTop = '10px';
+        b.addEventListener('click', fn);
+        parent.appendChild(b);
+      };
+      mkBtn('Export subdomain SVG', exportSubdomainSVG);
+      mkBtn('Export decomposition SVG', exportDecompSVG);
     }
+
+    const ES = 340, EP = 6, EDIM = ES + 2 * EP; // fixed export size (matches I3)
+    const emap = (x, y) => [EP + x * ES, EP + (1 - y) * ES];
 
     function svgPaint(col) {
       const m = /rgba?\(([^)]+)\)/.exec(col);
@@ -385,34 +393,72 @@
       return { color: col, opacity: 1 };
     }
 
-    function exportSceneSVG() {
-      const P = 6, ES = 340, dim = ES + 2 * P; // fixed export size (matches I3)
-      const map = (x, y) => [P + x * ES, P + (1 - y) * ES];
+    function svgOpen() {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${EDIM}" ` +
+        `height="${EDIM}" viewBox="0 0 ${EDIM} ${EDIM}">`;
+    }
+    function svgOuterSquare() {
+      const dir = svgPaint(theme.dirichlet);
+      return `<rect x="${EP}" y="${EP}" width="${ES}" height="${ES}" fill="none" ` +
+        `stroke="${dir.color}" stroke-opacity="${dir.opacity}" stroke-width="3"/>`;
+    }
+    function svgObstacleRects(rects) {
       const fill = svgPaint(theme.neumannFill);
       const stroke = svgPaint(theme.neumann);
-      const dir = svgPaint(theme.dirichlet);
-      const out = [
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${dim}" height="${dim}" viewBox="0 0 ${dim} ${dim}">`,
-        `<rect x="${P}" y="${P}" width="${ES}" height="${ES}" fill="none" ` +
-          `stroke="${dir.color}" stroke-opacity="${dir.opacity}" stroke-width="3"/>`,
-      ];
-      for (const r of localScene.rects) {
-        const [x, y] = map(r.x0, r.y1);
-        out.push(`<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" ` +
+      return rects.map((r) => {
+        const [x, y] = emap(r.x0, r.y1);
+        return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" ` +
           `width="${((r.x1 - r.x0) * ES).toFixed(2)}" height="${((r.y1 - r.y0) * ES).toFixed(2)}" ` +
           `fill="${fill.color}" fill-opacity="${fill.opacity}" ` +
           `stroke="${stroke.color}" stroke-opacity="${stroke.opacity}" ` +
-          `stroke-width="2" stroke-dasharray="5,4"/>`);
-      }
-      out.push('</svg>');
-      const blob = new Blob([out.join('\n')], { type: 'image/svg+xml' });
+          `stroke-width="2" stroke-dasharray="5,4"/>`;
+      });
+    }
+    function downloadSVG(parts, filename) {
+      const blob = new Blob([parts.join('\n')], { type: 'image/svg+xml' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `subdomain-${sel.i}-${sel.j}-of-${n}.svg`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+
+    function exportSubdomainSVG() {
+      const out = [svgOpen(), svgOuterSquare(), ...svgObstacleRects(localScene.rects), '</svg>'];
+      downloadSVG(out, `subdomain-${sel.i}-${sel.j}-of-${n}.svg`);
+    }
+
+    function exportDecompSVG() {
+      const { a, b, L } = tileBounds();
+      const hi = svgPaint('rgba(58,96,156,0.12)'); // selected-tile highlight
+      const grid = svgPaint(theme.interface);
+      const acc = svgPaint(theme.accent);
+      const [tx, ty] = emap(a, b + L); // top-left of selected tile
+      const tw = L * ES;
+      const out = [svgOpen()];
+      // Selected-tile highlight (behind everything).
+      out.push(`<rect x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" width="${tw.toFixed(2)}" ` +
+        `height="${tw.toFixed(2)}" fill="${hi.color}" fill-opacity="${hi.opacity}"/>`);
+      // Tile grid.
+      for (let i = 1; i < n; i++) {
+        const t = i / n;
+        const [vx0, vy0] = emap(t, 0), [vx1, vy1] = emap(t, 1);
+        out.push(`<line x1="${vx0.toFixed(2)}" y1="${vy0.toFixed(2)}" x2="${vx1.toFixed(2)}" ` +
+          `y2="${vy1.toFixed(2)}" stroke="${grid.color}" stroke-opacity="${grid.opacity}" stroke-width="1.5"/>`);
+        const [hx0, hy0] = emap(0, t), [hx1, hy1] = emap(1, t);
+        out.push(`<line x1="${hx0.toFixed(2)}" y1="${hy0.toFixed(2)}" x2="${hx1.toFixed(2)}" ` +
+          `y2="${hy1.toFixed(2)}" stroke="${grid.color}" stroke-opacity="${grid.opacity}" stroke-width="1.5"/>`);
+      }
+      // Outer Dirichlet square + full Neumann obstacles.
+      out.push(svgOuterSquare(), ...svgObstacleRects(baseScene.rects));
+      // Selected-tile outline (on top).
+      out.push(`<rect x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" width="${tw.toFixed(2)}" ` +
+        `height="${tw.toFixed(2)}" fill="none" stroke="${acc.color}" ` +
+        `stroke-opacity="${acc.opacity}" stroke-width="2.5"/>`);
+      out.push('</svg>');
+      downloadSVG(out, `decomposition-${n}x${n}-tile-${sel.i}-${sel.j}.svg`);
     }
 
     if (tileLabel) tileLabel.textContent = `${n}×${n}`;
