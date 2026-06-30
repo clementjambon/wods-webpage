@@ -32,6 +32,7 @@
     const sampLabel = root.querySelector('[data-role="samples-label"]');
     const precomputeBtn = root.querySelector('button[data-role="precompute"]');
     const toggleGridBtn = root.querySelector('button[data-role="toggle-grid"]');
+    const toggleKernelBtn = root.querySelector('button[data-role="toggle-kernel"]');
     const statusLabel = root.querySelector('[data-role="status"]');
     const progressBox = root.querySelector('[data-role="progress"]');
     const progressFill = root.querySelector('[data-role="progress-fill"]');
@@ -49,6 +50,9 @@
     let showGrid = true;
     let gridReveal = 1;   // eased 0..1 reveal of the internal subgrid
     let lastT = null;
+    // Toggles the source x, the kernel histogram, and the selected-cell
+    // mask together (leaving just the subdomain geometry + subgrid).
+    let showKernel = true;
     let selTile = { ti: Math.floor(n / 2), tj: Math.floor(n / 2) };
 
     const baseScene = Sc.layout(12);
@@ -355,10 +359,13 @@
     function drawOperator() {
       opctx.clearRect(0, 0, W0, H0);
 
-      const cw = SQ / R;
-      const [hx, hy] = toScreen(selBucket.ix / R, (selBucket.iy + 1) / R);
-      opctx.fillStyle = 'rgba(58,96,156,0.12)';
-      opctx.fillRect(hx, hy, cw, cw);
+      // Selected-cell mask (toggles with the source/kernel).
+      if (showKernel) {
+        const cw = SQ / R;
+        const [hx, hy] = toScreen(selBucket.ix / R, (selBucket.iy + 1) / R);
+        opctx.fillStyle = 'rgba(58,96,156,0.12)';
+        opctx.fillRect(hx, hy, cw, cw);
+      }
 
       drawSubgrid();
 
@@ -367,6 +374,8 @@
       opctx.strokeStyle = theme.dirichlet;
       opctx.strokeRect(o[0], o[1], SQ, SQ);
       drawObstacles(opctx, localScene.rects);
+
+      if (!showKernel) return;
 
       if (ready()) drawBars();
 
@@ -459,6 +468,13 @@
       };
       toggleGridBtn.addEventListener('click', () => { showGrid = !showGrid; updateGridBtn(); });
       updateGridBtn();
+    }
+    if (toggleKernelBtn) {
+      const updateKernelBtn = () => {
+        toggleKernelBtn.textContent = showKernel ? 'Hide source & kernel' : 'Show source & kernel';
+      };
+      toggleKernelBtn.addEventListener('click', () => { showKernel = !showKernel; updateKernelBtn(); });
+      updateKernelBtn();
     }
     if (toggle) {
       toggle.addEventListener('change', (e) => {

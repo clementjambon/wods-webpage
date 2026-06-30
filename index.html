@@ -596,31 +596,38 @@
           <div class="canvas-row" style="justify-content:center;">
             <div class="canvas-col"><canvas class="diagram" data-role="decomp"></canvas></div>
             <div class="canvas-col"><canvas class="diagram" data-role="operator"></canvas></div>
-            <div class="controls">
-              <label>Solver</label>
-              <div class="solver-toggle" data-role="solver-toggle">
-                <label><input type="radio" name="binop-solver" value="wost" checked><span>WoSt</span></label>
-                <label><input type="radio" name="binop-solver" value="wos"><span>WoS</span></label>
-              </div>
-              <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">4×4</span></label>
-              <input type="range" data-role="tiles" min="2" max="10" step="1" value="4" />
-              <label style="margin-top:14px;">Binning resolution: <span data-role="res-label">4×4</span></label>
-              <input type="range" data-role="res" min="2" max="10" step="1" value="4" />
-              <label style="margin-top:14px;">Samples / bucket: <span data-role="samples-label">1000</span></label>
-              <input type="range" data-role="samples" min="100" max="10000" step="100" value="1000" />
-              <button data-role="precompute">Precompute operator</button>
-              <div data-role="progress" style="display:none; margin-top:10px;">
-                <div style="height:8px; background:var(--color-rule); border-radius:4px; overflow:hidden;">
-                  <div data-role="progress-fill" style="height:100%; width:0%; background:var(--color-accent);"></div>
+            <div class="controls" style="flex:1 1 480px; max-width:none; display:grid; grid-template-columns:1fr 1fr; gap:0 22px; align-items:start;">
+              <div>
+                <label>Solver</label>
+                <div class="solver-toggle" data-role="solver-toggle">
+                  <label><input type="radio" name="binop-solver" value="wost" checked><span>WoSt</span></label>
+                  <label><input type="radio" name="binop-solver" value="wos"><span>WoS</span></label>
                 </div>
-                <div data-role="progress-text" style="font-size:0.72rem; color:var(--color-text-muted); margin-top:4px;"></div>
+                <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">4×4</span></label>
+                <input type="range" data-role="tiles" min="2" max="10" step="1" value="4" />
+                <label style="margin-top:14px;">Binning resolution: <span data-role="res-label">4×4</span></label>
+                <input type="range" data-role="res" min="2" max="10" step="1" value="4" />
+                <label style="margin-top:14px;">Samples / bucket: <span data-role="samples-label">1000</span></label>
+                <input type="range" data-role="samples" min="100" max="10000" step="100" value="1000" />
               </div>
-              <div class="stat" data-role="status" style="margin-top:10px;">Pick a subdomain, then click “Precompute”.</div>
-              <button data-role="toggle-grid">Hide subgrid</button>
-              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click a tile on the left to
-                choose a subdomain, then Precompute its boundary first-passage histogram for every interior bucket
-                (buckets inside the Neumann geometry are skipped). Drag $x$ — it snaps to the nearest bucket — to
-                inspect each precomputed kernel. Nothing runs until you click Precompute.</p>
+              <div>
+                <button data-role="precompute">Precompute operator</button>
+                <div data-role="progress" style="display:none; margin-top:10px;">
+                  <div style="height:8px; background:var(--color-rule); border-radius:4px; overflow:hidden;">
+                    <div data-role="progress-fill" style="height:100%; width:0%; background:var(--color-accent);"></div>
+                  </div>
+                  <div data-role="progress-text" style="font-size:0.72rem; color:var(--color-text-muted); margin-top:4px;"></div>
+                </div>
+                <div class="stat" data-role="status" style="margin-top:10px;">Pick a subdomain, then click “Precompute”.</div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
+                  <button data-role="toggle-grid">Hide subgrid</button>
+                  <button data-role="toggle-kernel">Hide source &amp; kernel</button>
+                </div>
+                <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click a tile on the left to
+                  choose a subdomain, then Precompute its boundary first-passage histogram for every interior bucket
+                  (buckets inside the Neumann geometry are skipped). Drag $x$ — it snaps to the nearest bucket — to
+                  inspect each precomputed kernel. Nothing runs until you click Precompute.</p>
+              </div>
             </div>
           </div>
         </div>

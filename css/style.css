@@ -804,6 +804,7 @@ footer a { color: inherit; border-bottom: 1px solid var(--color-rule); }
   .canvas-row .canvas-col { text-align: center; }
   .canvas-row .canvas-col > canvas { display: inline-block; }
   #imc .controls { grid-template-columns: 1fr !important; }
+  #binop .controls { grid-template-columns: 1fr !important; }
   .split { grid-template-columns: 1fr; }
   .pipeline { grid-template-columns: 1fr 1fr; }
   header.paper h1 { font-size: 1.45rem; }
