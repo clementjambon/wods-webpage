@@ -73,6 +73,11 @@
     let sceneIdx = 0;
     let T = parseInt(tilesSlider.value);
 
+    // Tile fills: amber = intersects geometry (needs Monte Carlo),
+    // green = empty (shares the single precomputed operator).
+    const MC_FILL = 'rgba(255, 196, 0, 0.42)';
+    const EMPTY_FILL = 'rgba(94, 176, 122, 0.30)';
+
     // ---- Tile classification ----------------------------------------
     // Returns true iff the tile (axis-aligned square in [0,1]^2) has a
     // non-empty intersection with the *boundary* of any obstacle, i.e.
@@ -162,24 +167,9 @@
         const y = (1 - (t.j + 1) / T) * size;
         const w = size / T;
         const h = size / T;
-        if (t.mc) {
-          ctx.fillStyle = 'rgba(255, 196, 0, 0.42)';
-        } else {
-          ctx.fillStyle = 'rgba(120, 120, 120, 0.06)';
-        }
+        ctx.fillStyle = t.mc ? MC_FILL : EMPTY_FILL;
         ctx.fillRect(x, y, w, h);
       }
-
-      // Tile grid lines.
-      ctx.strokeStyle = theme.interface;
-      ctx.lineWidth = 1;
-      ctx.globalAlpha = 0.55;
-      for (let k = 1; k < T; k++) {
-        const t = (k / T) * size;
-        ctx.beginPath(); ctx.moveTo(t, 0); ctx.lineTo(t, size); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, t); ctx.lineTo(size, t); ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
 
       // Obstacles.
       drawObstacles(ctx, scene, size);

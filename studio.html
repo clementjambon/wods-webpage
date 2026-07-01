@@ -600,7 +600,7 @@
                 </div>
                 <div class="controls">
                   <label>Tiles per axis $T$: <span data-role="tiles-label">10×10</span></label>
-                  <input type="range" data-role="tiles" min="2" max="32" step="1" value="10" />
+                  <input type="range" data-role="tiles" min="2" max="64" step="1" value="10" />
     
                   <label style="margin-top:14px;">Scene</label>
                   <div class="presets" data-role="scene-presets"></div>
@@ -612,7 +612,7 @@
     
                   <div class="legend" style="margin-top:10px;">
                     <span><i style="background:rgba(255,196,0,0.7)"></i> Intersects geometry — needs Monte Carlo</span>
-                    <span><i style="background:rgba(120,120,120,0.25)"></i> Empty tile — shared operator</span>
+                    <span><i style="background:rgba(94,176,122,0.7)"></i> Empty tile — shared operator</span>
                   </div>
                   <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Pick a scene and adjust
                     $T$. Only the highlighted tiles must have their solution operator estimated; all empty tiles share a
