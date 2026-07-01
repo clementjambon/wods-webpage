@@ -67,6 +67,8 @@ const out = `<!doctype html>
     .studio-label { font: 600 12px/1 var(--font-mono, monospace); color: #999; letter-spacing: .03em; margin: 0 0 1rem; }
     .studio-open { font-weight: 500; color: var(--color-accent, #2a5fb8); text-decoration: none; margin-left: 10px; }
     .studio-open:hover { text-decoration: underline; }
+    .studio-back { color: var(--color-accent, #2a5fb8); text-decoration: none; }
+    .studio-back:hover { text-decoration: underline; }
     .studio-solo .studio-open { display: none; }
     .studio-item .figure-caption { display: none !important; }
     .studio-item figure.figure { margin: 0; }
@@ -90,8 +92,20 @@ ${sections.join('\n\n')}
           const fig = sec.querySelector('figure');
           if (!fig || fig.id !== only) sec.remove();
         });
+        // Repurpose the header as a "back to studio" link (drops ?only but
+        // keeps record/scale/… so you return to the same recording setup).
         const head = document.querySelector('.studio-head');
-        if (head) head.style.display = 'none';
+        if (head) {
+          const back = document.createElement('a');
+          back.className = 'studio-back';
+          back.textContent = '← back to studio';
+          back.href = location.pathname;
+          const bp = new URLSearchParams(location.search);
+          bp.delete('only');
+          back.search = bp.toString();
+          head.textContent = '';
+          head.appendChild(back);
+        }
         document.title = 'WoDS studio — ' + only;
       }
       // Carry the current query (?record=1, &scale=…) onto each standalone
