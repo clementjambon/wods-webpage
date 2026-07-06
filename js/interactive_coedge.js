@@ -310,7 +310,6 @@
       advance(t);
       lastT = t;
       drawScene();
-      requestAnimationFrame(frame);
     }
 
     // ---- Controls ----------------------------------------------------
@@ -354,8 +353,8 @@
     }
 
     if (tileLabel) tileLabel.textContent = `${n}×${n}`;
-    requestAnimationFrame(frame);
+    U.animLoop(root, frame);
   }
 
-  W.WoDS.interactiveCoedge = init;
+  W.WoDS.interactiveCoedge = W.WoDS.lazyFigure(init);
 })(window);

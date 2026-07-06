@@ -269,5 +269,5 @@
     render();
   }
 
-  W.WoDS.interactiveLocality = init;
+  W.WoDS.interactiveLocality = W.WoDS.lazyFigure(init);
 })(window);

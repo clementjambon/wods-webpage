@@ -531,11 +531,10 @@
       }
       render();
       updateStat();
-      requestAnimationFrame(frame);
     }
 
-    requestAnimationFrame(frame);
+    U.animLoop(root, frame);
   }
 
-  W.WoDS.interactiveMarkov = init;
+  W.WoDS.interactiveMarkov = W.WoDS.lazyFigure(init);
 })(window);

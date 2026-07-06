@@ -71,6 +71,29 @@
     return Object.assign(t, ov);
   };
 
+  // Defer a figure's init until its root element approaches the
+  // viewport. Keeps first load light: the DOMContentLoaded burst only
+  // wires up figures near the top of the page; everything below
+  // initializes roughly a screen before the reader reaches it.
+  // Figure modules wrap their init with this at registration
+  // (W.WoDS.interactiveX = W.WoDS.lazyFigure(init)), so the call sites
+  // in index.html/studio.html are unchanged. Combined with
+  // util.animLoop (which pauses off-screen figures), page cost tracks
+  // what's on screen, not the whole post.
+  global.WoDS.lazyFigure = function (init) {
+    return function (root) {
+      if (!root) return;
+      if (!global.IntersectionObserver) return init(root);
+      const io = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          io.disconnect();
+          init(root);
+        }
+      }, { rootMargin: '800px 0px' });
+      io.observe(root);
+    };
+  };
+
   // Simulation defaults
   global.WoDS.config = {
     epsilon: 0.005,        // boundary tolerance (in unit square coords)

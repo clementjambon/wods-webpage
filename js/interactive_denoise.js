@@ -214,14 +214,13 @@
       drawField();
       drawBoundaryBand();
       drawDivider();
-      requestAnimationFrame(tick);
     }
 
     accumulate(1);
     syncRate();
     syncBtn();
-    requestAnimationFrame(tick);
+    U.animLoop(root, tick);
   }
 
-  W.WoDS.interactiveDenoise = init;
+  W.WoDS.interactiveDenoise = W.WoDS.lazyFigure(init);
 })(window);

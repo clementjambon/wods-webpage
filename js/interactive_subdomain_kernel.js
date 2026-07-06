@@ -177,7 +177,6 @@
       stepEstimate();
       drawDecomp();
       renderKernel();
-      requestAnimationFrame(frame);
     }
 
     // ---- Rendering --------------------------------------------------
@@ -458,8 +457,8 @@
 
     if (tileLabel) tileLabel.textContent = `${n}×${n}`;
     rebuildLocalScene();
-    requestAnimationFrame(frame);
+    U.animLoop(root, frame);
   }
 
-  W.WoDS.interactiveSubdomainKernel = init;
+  W.WoDS.interactiveSubdomainKernel = W.WoDS.lazyFigure(init);
 })(window);

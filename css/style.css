@@ -572,6 +572,13 @@ body.studio .blog-only { display: none; }
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 4px;
+  /* Reserve one thumbnail row's footprint (5 × 48px buttons + gaps)
+   * before lazy figure init fills the buttons in. Without this the
+   * empty row changes the controls column's intrinsic width, which
+   * can flip the canvas-row's flex wrap when init lands (the pipeline
+   * figure jumped ~400px), and the row's height pops in. */
+  min-width: 240px;
+  min-height: 48px;
 }
 .controls .presets button {
   margin: 0;
@@ -584,6 +591,13 @@ body.studio .blog-only { display: none; }
   border-radius: 2px;
 }
 .controls .presets button:hover { border-color: var(--color-text); }
+/* i0 has six preset thumbnails; within the desktop controls column
+ * (max 280px) they always wrap to two rows — reserve both before its
+ * lazy init fills them in. On mobile the controls are full-width and
+ * one row suffices, so the base 48px reservation applies. */
+@media (min-width: 721px) {
+  #i0 .presets[data-role="presets"] { min-height: 102px; }
+}
 
 /* Canvas baseline: NEVER stretch via CSS — the JS sets explicit
  * pixel width/height. Inline-block prevents block-level expansion. */
@@ -842,6 +856,8 @@ footer a { color: inherit; border-bottom: 1px solid var(--color-rule); }
   text-align: center;
   font-size: 0.85rem;
   color: var(--color-text-muted);
+  /* One line's worth of space, reserved before lazy init fills it. */
+  min-height: 24px;
 }
 .amc-legend .amc-swatch {
   display: inline-block;

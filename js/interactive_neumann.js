@@ -178,11 +178,68 @@
       }
     }
 
+    // Deferred-work queue. Init used to run ~2700 Jacobi sweeps
+    // synchronously (the main relax plus a 400-sweep solve per preset
+    // thumbnail); with lazy init that ~250ms block landed mid-scroll
+    // and visibly hitched the page. Jobs run one per timeout tick so
+    // scroll frames get through between them.
+    const deferred = [];
+    let deferTimer = 0; // guards double-scheduling when a job re-defers
+    // `first` jumps the queue: field refinement outranks thumbnails, so
+    // the main canvas always converges before peripheral UI fills in.
+    function defer(job, first) {
+      if (first) deferred.unshift(job); else deferred.push(job);
+      scheduleDeferred();
+    }
+    function scheduleDeferred() {
+      if (deferTimer || !deferred.length) return;
+      deferTimer = setTimeout(() => {
+        deferTimer = 0;
+        const job = deferred.shift();
+        if (job) job();
+        scheduleDeferred();
+      }, 16);
+    }
+    // Flush everything the moment the figure is about to be seen.
+    // Safari throttles timers in unfocused/occluded windows to ~1s, so
+    // the 16ms drain can stretch to one job per second — thumbnails
+    // popping in one by one and the field visibly stepping sharper for
+    // many seconds. One synchronous flush on viewport entry guarantees
+    // the figure is complete whenever it's actually looked at; in the
+    // normal focused case the queue is already empty by then.
+    if (W.IntersectionObserver) {
+      const flushIO = new IntersectionObserver((entries) => {
+        if (!entries[entries.length - 1].isIntersecting) return;
+        if (deferTimer) { clearTimeout(deferTimer); deferTimer = 0; }
+        while (deferred.length) deferred.shift()(); // jobs may re-defer; chains terminate
+        flushIO.disconnect(); // one-shot: later clicks happen focused, timers run full speed
+      }, { rootMargin: '96px 0px' });
+      flushIO.observe(root);
+    }
+
+    // Relax in chunks: a quick first pass gives an immediately
+    // presentable field, the rest refines over deferred ticks. A newer
+    // call (preset/scene click) supersedes any queued refinement.
+    let relaxGen = 0;
+    function relaxChunked(total) {
+      const gen = ++relaxGen;
+      relax(150);
+      render();
+      let left = total - 150;
+      function refine() {
+        if (gen !== relaxGen) return;
+        relax(Math.min(200, left));
+        left -= 200;
+        render();
+        if (left > 0) defer(refine, true);
+      }
+      if (left > 0) defer(refine, true);
+    }
+
     function applyPreset(fn) {
       grid.u.fill(0);
       retagCells(fn);
-      relax(700);
-      render();
+      relaxChunked(700);
     }
 
     function resetBoundary() { applyPreset(presetValue); }
@@ -417,8 +474,7 @@
         updateSceneHighlight();
         // Re-tag (without wiping painted boundary values), then relax.
         retagCells(null);
-        relax(700);
-        render();
+        relaxChunked(700);
       });
       scenePresetsDiv.appendChild(b);
       sceneButtons.push(b);
@@ -434,44 +490,48 @@
     // Boundary-value thumbnail: small heatmap of the harmonic extension
     // under the *current* obstacle scene.
     function buildBoundaryThumbnail(fn, px) {
-      const tg = L.makeGrid(N);
-      for (let jj = 0; jj < N; jj++) {
-        for (let ii = 0; ii < N; ii++) {
-          const k = jj*N + ii;
-          if (isBandCell(ii, jj)) {
-            tg.tag[k] = L.D;
-            tg.u[k] = Math.max(-1, Math.min(1, fn(ii, jj)));
-          } else {
-            const [x, y] = cellXY(ii, jj);
-            if (isInsideObstacle(x, y)) tg.tag[k] = L.N;
-          }
-        }
-      }
-      L.solve(tg, 400);
-
+      // Canvas is created (and returned) synchronously so the button
+      // grid lays out; the 400-sweep solve + raster runs deferred —
+      // five of these back to back were the bulk of the old init block.
       const c = document.createElement('canvas');
       const dpr = window.devicePixelRatio || 1;
       c.width = px * dpr; c.height = px * dpr;
       c.style.width = px + 'px'; c.style.height = px + 'px';
       const cx = c.getContext('2d');
       cx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      for (let py = 0; py < px; py++) {
-        for (let pxn = 0; pxn < px; pxn++) {
-          const x = (pxn + 0.5) / px;
-          const y = 1 - (py + 0.5) / px;
-          const ii = Math.min(N-1, Math.max(0, Math.floor(x * N)));
-          const jj = Math.min(N-1, Math.max(0, Math.floor(y * N)));
-          const k = jj*N + ii;
-          if (tg.tag[k] === L.N) {
-            cx.fillStyle = theme.surface;
-          } else {
-            const v = tg.u[k];
-            const t = (v + 1) * 0.5;
-            cx.fillStyle = U.colormap(t, theme);
+      defer(() => {
+        const tg = L.makeGrid(N);
+        for (let jj = 0; jj < N; jj++) {
+          for (let ii = 0; ii < N; ii++) {
+            const k = jj*N + ii;
+            if (isBandCell(ii, jj)) {
+              tg.tag[k] = L.D;
+              tg.u[k] = Math.max(-1, Math.min(1, fn(ii, jj)));
+            } else {
+              const [x, y] = cellXY(ii, jj);
+              if (isInsideObstacle(x, y)) tg.tag[k] = L.N;
+            }
           }
-          cx.fillRect(pxn, py, 1.05, 1.05);
         }
-      }
+        L.solve(tg, 400);
+        for (let py = 0; py < px; py++) {
+          for (let pxn = 0; pxn < px; pxn++) {
+            const x = (pxn + 0.5) / px;
+            const y = 1 - (py + 0.5) / px;
+            const ii = Math.min(N-1, Math.max(0, Math.floor(x * N)));
+            const jj = Math.min(N-1, Math.max(0, Math.floor(y * N)));
+            const k = jj*N + ii;
+            if (tg.tag[k] === L.N) {
+              cx.fillStyle = theme.surface;
+            } else {
+              const v = tg.u[k];
+              const t = (v + 1) * 0.5;
+              cx.fillStyle = U.colormap(t, theme);
+            }
+            cx.fillRect(pxn, py, 1.05, 1.05);
+          }
+        }
+      });
       return c;
     }
 
@@ -525,5 +585,5 @@
     resetBoundary();
   }
 
-  W.WoDS.interactiveNeumann = init;
+  W.WoDS.interactiveNeumann = W.WoDS.lazyFigure(init);
 })(window);

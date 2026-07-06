@@ -158,7 +158,12 @@
       return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     }
 
-    function step() {
+    // `t` is the tick clock (virtual time from U.animLoop). landedT is
+    // compared against it for the auto-restart delay, so it must be
+    // stamped from the same clock — performance.now() runs ahead of it
+    // by the figure's total off-screen time, which would push the
+    // restart out indefinitely (walk lands and never drops again).
+    function step(t) {
       if (phase !== 'walking') return;
       let nx = pos[0] + gauss() * STEP;
       let ny = pos[1] + gauss() * STEP;
@@ -175,7 +180,7 @@
         pos = [nx, ny];
         trail.push(pos.slice());
         landedAt = pos.slice();
-        landedT = performance.now();
+        landedT = t;
         phase = 'landed';
         positionLabel();
         return;
@@ -320,7 +325,7 @@
       if (phase === 'walking') {
         const dt = t - lastStep;
         const n = Math.min(8, Math.max(1, Math.floor(dt / 4)));
-        for (let i = 0; i < n; i++) step();
+        for (let i = 0; i < n; i++) step(t);
         lastStep = t;
       } else if (!STUDIO && phase === 'landed') {
         // Public page: auto-restart a new walk shortly after landing.
@@ -335,12 +340,11 @@
       ctx.restore();
 
       syncLabelVisibility();
-      requestAnimationFrame(tick);
     }
 
     if (STUDIO) goIdle(); else startWalk();
-    requestAnimationFrame(tick);
+    U.animLoop(root, tick);
   }
 
-  W.WoDS.interactiveBrownian = init;
+  W.WoDS.interactiveBrownian = W.WoDS.lazyFigure(init);
 })(window);

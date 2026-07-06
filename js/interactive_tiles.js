@@ -226,7 +226,12 @@
       hctx.fillText('walk length (log)', 4, 10);
     }
 
-    function fireBackgroundWalk() {
+    // `now` is the tick clock (virtual time from U.animLoop, which
+    // freezes while the figure is off screen) — walk t0 must come from
+    // it, NOT performance.now(): the real clock runs ahead of the
+    // virtual one by the total off-screen time, and a real-time t0
+    // makes `t - t0` negative forever, freezing the walk at 1 point.
+    function fireBackgroundWalk(now) {
       // Cheap, recorded-path walks for the histogram + animation queue
       let x, y, tries = 0;
       do {
@@ -243,7 +248,7 @@
 
       if (activeWalks.length < 2 && r.points && r.points.length > 1) {
         activeWalks.push({ points: r.points, stars: buildStars(r.points, r.radii),
-                           pointsShown: 1, t0: performance.now() });
+                           pointsShown: 1, t0: now });
       }
     }
 
@@ -337,7 +342,7 @@
       drawHistogram();
 
       // Throttle background walk firing — faster when walks are short
-      if (!tick._last || t - tick._last > 60) { fireBackgroundWalk(); tick._last = t; }
+      if (!tick._last || t - tick._last > 60) { fireBackgroundWalk(t); tick._last = t; }
       // Also fire some pure-stat walks for histogram convergence
       for (let k = 0; k < 2; k++) {
         let x, y, tries = 0;
@@ -352,12 +357,10 @@
           if (history.length > 400) history.shift();
         }
       }
-
-      requestAnimationFrame(tick);
     }
     tileLabel.textContent = `${tileSlider.value}×${tileSlider.value}`;
-    requestAnimationFrame(tick);
+    U.animLoop(root, tick);
   }
 
-  W.WoDS.interactiveTiles = init;
+  W.WoDS.interactiveTiles = W.WoDS.lazyFigure(init);
 })(window);

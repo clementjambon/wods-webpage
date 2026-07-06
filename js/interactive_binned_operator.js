@@ -400,7 +400,6 @@
       if (computing) stepPrecompute();
       drawDecomp();
       drawOperator();
-      requestAnimationFrame(frame);
     }
 
     // ---- Interaction ------------------------------------------------
@@ -492,8 +491,8 @@
     if (sampLabel) sampLabel.textContent = `${Ssamp}`;
     rebuildLocalScene();
     invalidate();
-    requestAnimationFrame(frame);
+    U.animLoop(root, frame);
   }
 
-  W.WoDS.interactiveBinnedOperator = init;
+  W.WoDS.interactiveBinnedOperator = W.WoDS.lazyFigure(init);
 })(window);

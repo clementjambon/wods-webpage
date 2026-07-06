@@ -152,8 +152,10 @@
       }
     });
 
-    // Legend below the chain.
-    const legend = document.createElement('div');
+    // Legend below the chain. The markup carries an empty placeholder
+    // (height reserved via CSS min-height) so lazy init doesn't shift
+    // the layout; fall back to appending for markup that lacks it.
+    const legend = root.querySelector('[data-role="legend"]') || document.createElement('div');
     legend.className = 'amc-legend';
     const gap = `<span style="display:inline-block; width:18px;"></span>`;
     legend.innerHTML =
@@ -163,7 +165,7 @@
       `&nbsp;Transient State` + gap +
       `<span class="amc-swatch amc-swatch--walker" style="background:${theme.walk}; border-color:#fff;"></span>` +
       `&nbsp;Walker`;
-    (stage.parentElement || stage).appendChild(legend);
+    if (!legend.parentElement) (stage.parentElement || stage).appendChild(legend);
 
     // === Simulation ===
     function randomTransient() {
@@ -231,11 +233,10 @@
             ? Math.max(0, 1 - (now - walkers[k].absorbedAt) / ABSORB_PAUSE_MS)
             : 1);
       }
-      requestAnimationFrame(tick);
     }
-    requestAnimationFrame(tick);
+    W.WoDS.util.animLoop(root, tick);
   }
 
   W.WoDS = W.WoDS || {};
-  W.WoDS.autoMarkov = init;
+  W.WoDS.autoMarkov = W.WoDS.lazyFigure(init);
 })(window);

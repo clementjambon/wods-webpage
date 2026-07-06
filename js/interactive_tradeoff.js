@@ -326,5 +326,5 @@
     render();
   }
 
-  W.WoDS.interactiveTradeoff = init;
+  W.WoDS.interactiveTradeoff = W.WoDS.lazyFigure(init);
 })(window);

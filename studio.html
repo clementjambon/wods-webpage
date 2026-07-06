@@ -45,7 +45,7 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="canvas-row">
-                <div class="canvas-col"><canvas class="diagram"></canvas></div>
+                <div class="canvas-col"><canvas width="320" height="320" class="diagram"></canvas></div>
                 <div class="controls">
                   <label>Brush value <span class="brush-val" data-role="brush-val">+1.00</span></label>
                   <input type="range" class="colormap-slider" data-role="brush" min="-1" max="1" step="0.01" value="1" />
@@ -70,7 +70,7 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="canvas-row">
-                <div class="canvas-col"><canvas class="diagram"></canvas></div>
+                <div class="canvas-col"><canvas width="320" height="320" class="diagram"></canvas></div>
                 <div class="controls">
                   <label>Brush value <span class="brush-val" data-role="brush-val">+1.00</span></label>
                   <input type="range" class="colormap-slider" data-role="brush" min="-1" max="1" step="0.01" value="1" />
@@ -102,7 +102,7 @@
             <div class="canvas-wrap">
               <div class="canvas-row solo">
                 <div class="canvas-col" style="position:relative;">
-                  <canvas class="diagram"></canvas>
+                  <canvas width="380" height="420" class="diagram"></canvas>
                   <div data-role="x-label"
                     style="position:absolute; pointer-events:none; font-size:0.95rem; transform:translate(-50%,-50%); white-space:nowrap; filter:drop-shadow(0 0 2px var(--color-surface)) drop-shadow(0 0 2px var(--color-surface)) drop-shadow(0 0 2px var(--color-surface));">
                   </div>
@@ -132,7 +132,7 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="canvas-row" style="justify-content:center;">
-                <div class="canvas-col"><canvas class="diagram"></canvas></div>
+                <div class="canvas-col"><canvas width="380" height="380" class="diagram"></canvas></div>
                 <!-- Studio: full authoring panel (play/pause, restart, rate). -->
                 <div class="controls studio-only">
                   <label>Refresh rate: <span data-role="rate">1</span> walks/frame</label>
@@ -172,7 +172,7 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="canvas-row">
-                <div class="canvas-col"><canvas class="diagram"></canvas></div>
+                <div class="canvas-col"><canvas width="380" height="380" class="diagram"></canvas></div>
                 <div class="controls">
                   <div class="studio-only">
                     <label>Solver</label>
@@ -202,7 +202,7 @@
                     </div>
                   </div>
                   <label style="margin-top:14px;">Walk-length histogram (log)</label>
-                  <canvas class="hist"></canvas>
+                  <canvas width="240" height="160" class="hist"></canvas>
                   <button data-role="reset">Reset histogram</button>
                   <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click anywhere inside to
                     start a walk; many more walks are run in the background to fill the histogram.</p>
@@ -225,7 +225,7 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="canvas-row">
-                <div class="canvas-col"><canvas class="diagram"></canvas></div>
+                <div class="canvas-col"><canvas width="380" height="380" class="diagram"></canvas></div>
                 <div class="controls">
                   <div class="studio-only">
                     <label>Solver</label>
@@ -254,7 +254,7 @@
                     </div>
                   </div>
                   <label style="margin-top:14px;">Walk-length histogram (log)</label>
-                  <canvas class="hist"></canvas>
+                  <canvas width="240" height="160" class="hist"></canvas>
                   <button data-role="reset">Reset histogram</button>
                   <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Walks terminate at tile
                     interfaces; shrink the tiles and the histogram moves to the left.</p>
@@ -275,7 +275,7 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="canvas-row">
-                <div class="canvas-col"><canvas class="diagram"></canvas></div>
+                <div class="canvas-col"><canvas width="480" height="480" class="diagram"></canvas></div>
                 <div class="controls">
                   <div class="studio-only">
                     <label>Solver</label>
@@ -312,7 +312,7 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="canvas-row">
-                <div class="canvas-col"><canvas class="diagram"></canvas></div>
+                <div class="canvas-col"><canvas width="480" height="480" class="diagram"></canvas></div>
                 <div class="controls">
                   <div class="studio-only">
                     <label>Solver</label>
@@ -348,8 +348,8 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="canvas-row" style="justify-content:center;">
-                <div class="canvas-col"><canvas class="diagram" data-role="decomp"></canvas></div>
-                <div class="canvas-col"><canvas class="diagram" data-role="kernel"></canvas></div>
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="decomp"></canvas></div>
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="kernel"></canvas></div>
                 <div class="controls">
                   <label>Solver</label>
                   <div class="solver-toggle" data-role="solver-toggle">
@@ -383,8 +383,8 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="canvas-row" style="justify-content:center;">
-                <div class="canvas-col"><canvas class="diagram" data-role="decomp"></canvas></div>
-                <div class="canvas-col"><canvas class="diagram" data-role="operator"></canvas></div>
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="decomp"></canvas></div>
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="operator"></canvas></div>
                 <div class="controls"
                   style="flex:1 1 480px; max-width:none; display:grid; grid-template-columns:1fr 1fr; gap:0 22px; align-items:start;">
                   <div>
@@ -439,7 +439,7 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="canvas-row" style="justify-content:center;">
-                <div class="canvas-col"><canvas class="diagram"></canvas></div>
+                <div class="canvas-col"><canvas width="400" height="400" class="diagram"></canvas></div>
                 <!-- Studio: full controls (sliders, buttons, full legend, hint). -->
                 <div class="controls studio-only">
                   <label>Tiling resolution: <span data-role="tiles-label">6×6</span></label>
@@ -491,6 +491,9 @@
           <div class="figure-body">
             <div class="canvas-wrap">
               <div class="amc-stage" data-role="stage"></div>
+              <!-- Filled by auto_markov.js at (lazy) init; present in the
+                   markup so the row's height is reserved before then. -->
+              <div class="amc-legend" data-role="legend"></div>
             </div>
             <div class="figure-caption"><b>Absorbing Markov chain.</b> Three transient states
               $\mathcal{T}=\{t_1,t_2,t_3\}$ sit between two absorbing states $\mathcal{A}=\{a_L,a_R\}$. At each step a
@@ -515,7 +518,7 @@
                     </span>
                     <span>−1</span>
                   </div>
-                  <div class="canvas-col"><canvas class="diagram"></canvas></div>
+                  <div class="canvas-col"><canvas width="580" height="170" class="diagram"></canvas></div>
                   <div
                     style="display:flex; flex-direction:column; align-items:center; gap:4px; font-family:var(--font-mono); font-size:0.72rem; color:var(--color-text-muted);">
                     <span>+1</span>
@@ -557,7 +560,7 @@
             <div class="canvas-wrap">
               <div class="canvas-row">
                 <div class="canvas-col">
-                  <canvas class="diagram"></canvas>
+                  <canvas width="380" height="380" class="diagram"></canvas>
                   <div class="pipeline-stage-bar">
                     <label>Pipeline stage: <span class="brush-val" data-role="stage-label">0 — Domain</span></label>
                     <input type="range" class="colormap-slider stage-slider" data-role="stage" min="0" max="4" step="1"
@@ -623,14 +626,14 @@
             <div class="canvas-wrap">
               <div class="canvas-row" style="flex-wrap:nowrap; justify-content:center;">
                 <div class="canvas-col" style="width:320px;">
-                  <canvas class="diagram" data-role="domain"></canvas>
+                  <canvas width="320" height="320" class="diagram" data-role="domain"></canvas>
                   <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:8px; width:320px;">
                     Interface values at fixed $N$. Tile interfaces are the only unknowns of the global
                     solve.
                   </p>
                 </div>
                 <div class="canvas-col" style="width:320px; position:relative;">
-                  <canvas class="diagram" data-role="plot"></canvas>
+                  <canvas width="320" height="320" class="diagram" data-role="plot"></canvas>
                   <span data-role="x-axis-label"
                     style="position:absolute; left:181px; top:303px; transform:translate(-50%,0); font-size:12px; color:var(--color-text); white-space:nowrap;">Subtile
                     resolution $B$</span>
@@ -678,7 +681,7 @@
             <div class="canvas-wrap">
               <div class="canvas-row">
                 <div class="canvas-col">
-                  <canvas class="diagram"></canvas>
+                  <canvas width="380" height="380" class="diagram"></canvas>
                 </div>
                 <div class="controls">
                   <label>Tiles per axis $T$: <span data-role="tiles-label">10×10</span></label>

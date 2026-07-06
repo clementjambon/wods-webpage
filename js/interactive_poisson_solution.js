@@ -490,5 +490,5 @@
     startPrecompute();
   }
 
-  W.WoDS.interactivePoissonSolution = init;
+  W.WoDS.interactivePoissonSolution = W.WoDS.lazyFigure(init);
 })(window);

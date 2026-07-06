@@ -752,5 +752,5 @@
     startLoopIfNeeded();
   }
 
-  W.WoDS.interactivePipeline = init;
+  W.WoDS.interactivePipeline = W.WoDS.lazyFigure(init);
 })(window);

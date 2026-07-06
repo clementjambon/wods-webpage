@@ -73,5 +73,44 @@
     return [Math.max(x0, Math.min(px, x1)), Math.max(y0, Math.min(py, y1))];
   };
 
+  // Visibility-gated animation loop. Drives tick(t) from
+  // requestAnimationFrame only while `el` is on screen (plus a small
+  // margin), so off-screen figures cost nothing. The timestamp passed
+  // to tick is a virtual clock that freezes while the loop is paused:
+  // time-based state (hold timers, per-step clocks, dt easing) resumes
+  // where it left off instead of seeing one huge dt after a long scroll.
+  // Returns a handle whose .visible flag lets non-rAF work (background
+  // setTimeout chains) gate itself on the same observer.
+  U.animLoop = function (el, tick) {
+    const handle = { visible: true };
+    let raf = null, last = 0, gap = false, offset = 0;
+    function frame(t) {
+      raf = requestAnimationFrame(frame);
+      if (gap) { offset += t - last; gap = false; }
+      last = t;
+      tick(t - offset);
+    }
+    if (!W.IntersectionObserver) { // very old browser: run unconditionally
+      raf = requestAnimationFrame(frame);
+      return handle;
+    }
+    const io = new IntersectionObserver((entries) => {
+      // A single callback can batch several transitions (fast scroll
+      // past a short figure delivers enter+exit together) — only the
+      // LAST entry reflects the current state.
+      const on = entries[entries.length - 1].isIntersecting;
+      handle.visible = on;
+      if (on && raf === null) {
+        gap = last > 0; // freeze the virtual clock across the pause
+        raf = requestAnimationFrame(frame);
+      } else if (!on && raf !== null) {
+        cancelAnimationFrame(raf);
+        raf = null;
+      }
+    }, { rootMargin: '96px 0px' });
+    io.observe(el);
+    return handle;
+  };
+
   W.WoDS.util = U;
 })(window);

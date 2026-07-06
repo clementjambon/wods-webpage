@@ -364,10 +364,12 @@
 
     // Background walks on a self-chaining timeout: if a single walk
     // is slow, the next one fires later instead of piling up behind
-    // requestAnimationFrame and starving input handlers.
+    // requestAnimationFrame and starving input handlers. Walks only
+    // fire while the figure is on screen (vis, set below) — the timer
+    // itself keeps ticking, which is negligible.
     function scheduleBackgroundWalk() {
       setTimeout(() => {
-        try { fireBackgroundWalk(); } finally { scheduleBackgroundWalk(); }
+        try { if (vis.visible) fireBackgroundWalk(); } finally { scheduleBackgroundWalk(); }
       }, 100);
     }
 
@@ -410,12 +412,11 @@
         ctx.restore();
       }
       drawHistogram();
-      requestAnimationFrame(tick);
     }
     rebuildScene();
+    const vis = U.animLoop(root, tick);
     scheduleBackgroundWalk();
-    requestAnimationFrame(tick);
   }
 
-  W.WoDS.interactiveWalks = init;
+  W.WoDS.interactiveWalks = W.WoDS.lazyFigure(init);
 })(window);

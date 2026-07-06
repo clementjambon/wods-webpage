@@ -708,5 +708,5 @@
     resetEstimate();
   }
 
-  W.WoDS.interactivePoissonKernel = init;
+  W.WoDS.interactivePoissonKernel = W.WoDS.lazyFigure(init);
 })(window);
