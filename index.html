@@ -259,7 +259,7 @@
       </div>
     </figure>
 
-    <p>Doing this independently at <i>every</i> interior point gives us the whole solution. With only a few walks per
+    <p>Doing this independently at every interior point gives us the whole solution. With only a few walks per
       point the estimate is noisy, but as we average more and more, variance progressively vanishes and the smooth
       harmonic solution emerges as shown in the figure below.</p>
 
@@ -411,7 +411,7 @@
       subdomains.
     </p>
 
-    <p>More formally, we propose to decompose the domain into a partition of smaller non-overlapping subdomains
+    <p>More formally, we propose to decompose the domain into a partition of smaller <i>non-overlapping</i> subdomains
       $\mathcal{D}=\{\Omega_i\}$, for example regular tiles. On each tile, the Dirichlet boundary is the union of (a)
       physical Dirichlet pieces
       inherited from $\partial\Omega_D$ and (b) artificial Dirichlet pieces — the <i>interfaces</i> with neighboring
@@ -662,43 +662,6 @@
           short Monte-Carlo walks estimate the first-passage distribution over the $R$ boundary bins per edge.
           Dragging $x$ snaps to a bucket and shows its precomputed kernel — the subdomain's discrete solution
           operator, one row at a time.</div>
-      </div>
-    </figure>
-
-    <figure class="figure" id="coedge-fig">
-      <div class="figure-body">
-        <div class="canvas-wrap">
-          <div class="canvas-row">
-            <div class="canvas-col"><canvas class="diagram"></canvas></div>
-            <div class="controls">
-              <label>Tiling resolution: <span data-role="tiles-label">6×6</span></label>
-              <input type="range" data-role="tiles" min="2" max="10" step="1" value="6" />
-              <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1×</span></label>
-              <input type="range" data-role="speed" min="0" max="5" step="1" value="2" />
-              <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;">
-                <button data-role="new">↻ New walk</button>
-                <button data-role="play">⏸ Pause</button>
-                <button data-role="release" style="display:none;">✕ Release</button>
-              </div>
-              <div class="legend" style="margin-top:10px;">
-                <span><i style="background:var(--color-interface)"></i> Tile interfaces</span>
-                <span><i style="background:rgba(42,95,184,0.35)"></i> Current co-edge subdomain</span>
-                <span><i style="height:0; background:none; border-top:2px dashed #4a4a4a;"></i> Neumann obstacles</span>
-              </div>
-              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">The walker hops from
-                interface to interface. At each hop it sits on a tile interface; the two tiles sharing that edge form
-                a <b>co-edge subdomain</b> (blue). It then jumps to a uniformly random exit on that subdomain's
-                boundary — rejection-sampling any point inside the obstacles — which lands on a new interface and
-                re-centers the next co-edge subdomain, until it reaches the global boundary $Z_\tau$. (A naive,
-                educational cartoon: uniform over exits, not the true harmonic measure.) Click an interface to launch
-                walks from that spot; <b>Release</b> resumes random starts.</p>
-            </div>
-          </div>
-        </div>
-        <div class="figure-caption"><b>Walk on Co-edge Subdomains.</b> Starting from a point $x$ on an interface, the
-          walk advances by first-passage inside the co-edge subdomain straddling its current interface — the union of
-          the two adjacent tiles. Each exit lands on a new interface, re-centering the subdomain, until the walk is
-          absorbed on the global Dirichlet boundary at $Z_\tau$.</div>
       </div>
     </figure>
 
@@ -1063,20 +1026,67 @@
     <!-- ===== SECTION 6 ===== -->
     <h2 data-label="coupling"><span class="secnum">6</span>Coupling Tiles via an Absorbing Markov Chain</h2>
 
-    <p>Now we finally have all the pieces to recover values at interfaces between subdomains! The trick is to <i>Walk
+    <p>Now we have almost all the pieces to recover values at interfaces between subdomains! The trick is to <i>Walk
         <b>on</b>
         Decomposed Subdomains</i>, or more precisely on their interfaces.
-      To do so, we use the strategy defined in <a class="ref" data-ref="poisson-kernel"></a> to estimate and tabulate
-      transition probabilities between interfaces<fn>One important subtlety: <a class="ref"
-          data-ref="poisson-kernel"></a> only covers how to estimate
-        probabilities from the interior to interfaces, not between interfaces themselves. Handling the latter requires
-        an additional <i>overlapping</i> domain decomposition — which we call the co-edge decomposition — that treats
-        interfaces as the interior of their corresponding subdomains. See the paper for details.
-      </fn>. Discretizing these probabilities yields a global Markov chain over interfaces, and the absorbing
-      Markov chain formalism from <a class="ref" data-ref="markov"></a> lets us solve for interface values directly
+    </p>
+
+    <p>
+      The last problem is that, so far, we've only seen
+      in <a class="ref" data-ref="poisson-kernel"></a> how to jump from the
+      inside of a subdomain to one of its interfaces and not from one interface to another.
+      The fix is to view each interface through <i>another decomposition<fn>This time it is an overlapping
+          decomposition.</fn></i> of the domain, one where the
+      interface sits in the interior of a subdomain. On a grid, that subdomain is just the two cells sharing the
+      edge, and its boundary is the neighboring interfaces. We call these <i>“co-edge” subdomains</i>.
+    </p>
+
+    <figure class="figure" id="coedge-fig">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col"><canvas class="diagram"></canvas></div>
+            <div class="controls">
+              <label>Tiling resolution: <span data-role="tiles-label">6×6</span></label>
+              <input type="range" data-role="tiles" min="2" max="10" step="1" value="6" />
+              <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1×</span></label>
+              <input type="range" data-role="speed" min="0" max="5" step="1" value="2" />
+              <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;">
+                <button data-role="new">↻ New walk</button>
+                <button data-role="play">⏸ Pause</button>
+                <button data-role="release" style="display:none;">✕ Release</button>
+              </div>
+              <div class="legend" style="margin-top:10px;">
+                <span><i style="background:var(--color-interface)"></i> Tile interfaces</span>
+                <span><i style="background:rgba(42,95,184,0.35)"></i> Current co-edge subdomain</span>
+                <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann
+                  obstacles</span>
+              </div>
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">The walker hops from
+                interface to interface. At each hop it sits on a tile interface; the two tiles sharing that edge form
+                a <b>co-edge subdomain</b> (blue). It then jumps to a uniformly random exit on that subdomain's
+                boundary — rejection-sampling any point inside the obstacles — which lands on a new interface and
+                re-centers the next co-edge subdomain, until it reaches the global boundary $Z_\tau$. (A naive,
+                educational cartoon: uniform over exits, not the true harmonic measure.) Click an interface to launch
+                walks from that spot; <b>Release</b> resumes random starts.</p>
+            </div>
+          </div>
+        </div>
+        <div class="figure-caption"><b>Walk on Co-edge Subdomains.</b> Starting from a point $x$ on an interface, the
+          walk advances by first-passage inside the co-edge subdomain straddling its current interface — the union of
+          the two adjacent tiles. Each exit lands on a new interface, re-centering the subdomain, until the walk is
+          absorbed on the global Dirichlet boundary at $Z_\tau$.</div>
+      </div>
+    </figure>
+
+    <p>With this, we can define a discrete Markov chain where the interfaces are the transient states, the global
+      Dirichlet boundary gives the absorbing states, and the first-passage probabilities between interfaces define the
+      transitions and are estimated using the strategy defined in <a class="ref" data-ref="poisson-kernel"></a>.
+      The Markov chain formalism from <a class="ref" data-ref="markov"></a> lets us solve for interface values directly
       through a deterministic (sparse) linear solve — sidestepping the relatively long, high-variance random walks that
       would
-      otherwise be required.</p>
+      otherwise be required.
+    </p>
 
     <p>Once interface values are known, the boundary of every tile is fully determined, and we recover each tile's
       interior with a single matrix–vector product using precomputed solution operators for the interior, i.e.,
@@ -1130,7 +1140,8 @@
                   obstacle</span>
                 <span><i style="background:var(--color-interface)"></i> Tile interfaces</span>
               </div>
-              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Slide through the pipeline.
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Slide through the
+                pipeline.
               </p>
             </div>
           </div>
@@ -1158,7 +1169,8 @@
       precompute it only once across all scenes<fn>It actually has a closed-form expression.</fn>. In other words,
       the number of solution operators that must be estimated grows with the geometric complexity and not domain size
       (i.e.,
-      area in 2D). This has another significant advantage: if only a subset of the scene changes — as is common in many
+      area in 2D). This has another significant advantage: if only a subset of the scene changes — as is common in
+      many
       design or simulation workflows — only the affected tiles need to be re-estimated.</p>
 
     <figure class="figure" id="locality-fig">
@@ -1194,21 +1206,27 @@
             </div>
           </div>
         </div>
-        <div class="figure-caption"><b>Locality of solution-operator estimation.</b> Our method inherits the locality of
-          grid-based approaches by requiring the estimation of solution operators only in regions near the geometry. As
+        <div class="figure-caption"><b>Locality of solution-operator estimation.</b> Our method inherits the locality
+          of
+          grid-based approaches by requiring the estimation of solution operators only in regions near the geometry.
+          As
           a result, the actual Monte Carlo cost scales with geometric complexity rather than domain size.
         </div>
       </div>
     </figure>
 
-    <p>Another beautiful thing is that our approach exposes an adjustable trade-off between the cost of stochastic Monte
+    <p>Another beautiful thing is that our approach exposes an adjustable trade-off between the cost of stochastic
+      Monte
       Carlo
-      estimation of solution operators (which is highly parallelizable within each individual tile) and the cost of the
+      estimation of solution operators (which is highly parallelizable within each individual tile) and the cost of
+      the
       deterministic global solve on interfaces. As can be seen in the interactive figure below, at fixed output
       resolution $N$, increasing the size $B$ of each tile requires more Monte Carlo effort per tile, but the
-      deterministic global solve becomes cheaper because the interfaces it couples are fewer and farther apart. In other
+      deterministic global solve becomes cheaper because the interfaces it couples are fewer and farther apart. In
+      other
       words, we can directly amortize the $O(N^2)$ degrees of freedom of the global solve to $O(N^2/B)$ degrees of
-      freedom if we can afford more Monte Carlo<fn>You may argue that what matters most is not the number of degrees of
+      freedom if we can afford more Monte Carlo<fn>You may argue that what matters most is not the number of degrees
+        of
         freedom but the sparsity or conditioning of the matrix. It turns out that our matrices are sparse because they
         only couple neighboring interfaces. In other words, the
         global connectivity of the system closely resembles
@@ -1219,7 +1237,8 @@
         paper.</fn>. This is a significant result, which I
       hope
       we can build upon in the
-      future because Monte Carlo is embarrassingly parallel and can run on accelerated hardware (e.g., GPUs)<fn>What I'm
+      future because Monte Carlo is embarrassingly parallel and can run on accelerated hardware (e.g., GPUs)<fn>What
+        I'm
         not saying here is that there is not only a cost in samples but also in memory! Larger tiles mean more memory
         usage,
         and actually quite a lot! But as we discuss in the paper, I believe our community has developed many
@@ -1283,7 +1302,8 @@
     <!-- ===== SECTION 8 ===== -->
     <h2 data-label="reflect"><span class="secnum">8</span>Reflections and Future Work</h2>
 
-    <p>I am very excited by our work and the doors it opens for future research. One thing people often bring up is the
+    <p>I am very excited by our work and the doors it opens for future research. One thing people often bring up is
+      the
       analogy to <a href="https://en.wikipedia.org/wiki/Radiosity_(computer_graphics)" target="_blank"
         rel="noopener noreferrer">radiosity</a> and Monte Carlo path tracing in rendering<fn>It turns
         out our approach has even more connections to previous rendering works and in particular volume rendering. See
@@ -1297,14 +1317,17 @@
         rel="noopener noreferrer">email thread</a> in 1997<cite data-key="shirley1997whatswrong"></cite>:</p>
 
     <blockquote class="email-quote">
-      <p>In summary, pure MCPT has only two advantages &mdash; it is so dumb that it doesn't get hit by big scenes, and
+      <p>In summary, pure MCPT has only two advantages &mdash; it is so dumb that it doesn't get hit by big scenes,
+        and
         it is easy to implement. […]</p>
       <p>I think the solution is <span class="quote-highlight">hybrid methods</span> &mdash; add bias! (This is
         blasphemy
         in MC circles :^) ). I do want to keep the good parts of MC methods &mdash; they are damned robust and are
-        possible to implement correctly &mdash; my MC code does not bomb on weird untweaked inputs &mdash; tell me with
+        possible to implement correctly &mdash; my MC code does not bomb on weird untweaked inputs &mdash; tell me
+        with
         a straight face that is true of most non-MC implementations. However, you are right that the results are too
-        noisy!!! We can keep these benefits and reduce noise <span class="quote-highlight">if we add bias the right way
+        noisy!!! We can keep these benefits and reduce noise <span class="quote-highlight">if we add bias the right
+          way
           (not that I know what that right way is)</span>.</p>
     </blockquote>
 
