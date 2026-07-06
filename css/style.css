@@ -248,6 +248,22 @@ blockquote { margin: 0 0 18px; padding: 0; border-left: none; font-style: normal
   display: block;
   max-width: 100%;
 }
+/* SVG diagrams whose math labels are overlaid as absolutely-positioned
+ * KaTeX HTML rather than <foreignObject> (which Safari mispositions when
+ * the SVG is scaled). The wrapper matches the SVG's box so label
+ * left/top percentages map linearly onto the viewBox coordinates. */
+.svg-label-wrap {
+  position: relative;
+  width: 100%;
+}
+.svg-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
 .figure-caption {
   text-align: justify;
   hyphens: auto;
