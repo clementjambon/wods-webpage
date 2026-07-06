@@ -15,20 +15,32 @@
     const xLabel = root.querySelector('[data-role="x-label"]');
     const eqLabel = root.querySelector('[data-role="eq-label"]');
 
+    // TEMP export hack (?ibrownexport=1): drop the bottom padding so the
+    // domain sits flush against the frame bottom, and only show walks that
+    // exit on the top/left/right (see step()). For slide trajectories.
+    const EXPORT = new URLSearchParams(W.location.search).has('ibrownexport');
+
     // Generous padding so labels don't crop at the edges. Extra bottom
     // room reserved for the u(x) = E[u(Z_tau)] equation.
-    const W0 = 380, H0 = 420;
+    const W0 = 380;
+    const PAD = 36;
+    const SIDE = W0 - 2 * PAD; // domain side length
+    // Normally 64px hold the equation overlay; in export mode ~0 (2px so
+    // the 4px boundary stroke isn't clipped) with a square domain flush
+    // to the bottom.
+    const PAD_BOTTOM = EXPORT ? 2 : 64;
+    const H0 = EXPORT ? (PAD + SIDE + PAD_BOTTOM) : 420;
     const ctx = U.fitCanvas(canvas, W0, H0);
 
-    const PAD = 36, PAD_BOTTOM = 64;
     const X0 = PAD, Y0 = PAD, X1 = W0 - PAD, Y1 = H0 - PAD_BOTTOM;
     const SW = X1 - X0, SH = Y1 - Y0;
 
     // The extra bottom padding holds the u(x) = E[g(Z_tau)] equation,
     // which is an HTML overlay and so is absent from the recording. When
     // capturing, nudge everything down by half that surplus so the square
-    // sits vertically centered in the exported frame.
-    const CAP_SHIFT_Y = (PAD_BOTTOM - PAD) / 2;
+    // sits vertically centered in the exported frame. (No shift in export
+    // mode — the domain is already flush.)
+    const CAP_SHIFT_Y = EXPORT ? 0 : (PAD_BOTTOM - PAD) / 2;
 
     // g around the perimeter, parameterized by arc length s in [0,1).
     function gAtS(s) {
@@ -106,6 +118,7 @@
     renderTex(label, 'Z_\\tau', 'Z_τ');
     renderTex(xLabel, 'x', 'x');
     renderTex(eqLabel, 'u(x) = \\mathbb{E}[g(Z_\\tau)]', 'u(x) = E[g(Z_τ)]');
+    if (EXPORT && eqLabel) eqLabel.style.display = 'none'; // no room in export mode
 
     // Position the static x label beside the start point.
     {
@@ -146,6 +159,13 @@
       let nx = pos[0] + gauss() * STEP;
       let ny = pos[1] + gauss() * STEP;
       if (nx <= 0 || nx >= 1 || ny <= 0 || ny >= 1) {
+        // Export hack: reject walks absorbed on the bottom edge (v=0);
+        // restart from the origin so only top/left/right exits are shown.
+        if (EXPORT && ny <= 0) {
+          pos = START.slice();
+          trail = [pos.slice()];
+          return;
+        }
         nx = Math.max(0, Math.min(1, nx));
         ny = Math.max(0, Math.min(1, ny));
         pos = [nx, ny];
