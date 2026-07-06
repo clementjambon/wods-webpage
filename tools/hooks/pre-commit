@@ -1,0 +1,17 @@
+#!/bin/sh
+# Keep studio.html in sync with index.html.
+#
+# studio.html is generated from index.html by tools/build-studio.js (it copies
+# each <figure> verbatim, so figure/legend edits live in index.html only). This
+# hook regenerates it whenever a build input is staged and stages the result,
+# so the two pages can never drift apart within a commit.
+#
+# Enabled via:  git config core.hooksPath tools/hooks
+set -e
+
+# Only rebuild when something that feeds the studio build is staged.
+if git diff --cached --name-only | grep -qE '^(index\.html|tools/build-studio\.js)$'; then
+  echo "[pre-commit] regenerating studio.html from index.html"
+  node tools/build-studio.js
+  git add studio.html
+fi
