@@ -16,16 +16,29 @@
   function init(root) {
     const theme = W.WoDS.themeFor ? W.WoDS.themeFor(root) : W.WoDS.theme();
     const canvas = root.querySelector('canvas.diagram');
-    const rateSlider = root.querySelector('[data-role="rate-slider"]');
-    const rateLabel = root.querySelector('[data-role="rate"]');
-    const playBtn = root.querySelector('[data-role="play"]');
-    const restartBtn = root.querySelector('[data-role="restart"]');
+    // Blog and studio have separate control markup (a minimal slider below the
+    // canvas vs. the full side panel); pick the active one by page.
+    const STUDIO = W.WoDS.inStudio;
+    // Studio keeps the full panel (pace slider + play/restart). The blog shows
+    // a read-only progress slider that self-advances noise → solution.
+    const rateSlider = STUDIO ? root.querySelector('.studio-only [data-role="rate-slider"]') : null;
+    const rateLabel = root.querySelector('.studio-only [data-role="rate"]');
+    const playBtn = STUDIO ? root.querySelector('[data-role="play"]') : null;
+    const restartBtn = STUDIO ? root.querySelector('[data-role="restart"]') : null;
+    const progressSlider = STUDIO ? null : root.querySelector('.blog-only [data-role="progress"]');
+    const sampleLabel = STUDIO ? null : root.querySelector('.blog-only [data-role="sample-count"]');
 
     const W0 = 380, H0 = 380;
     const ctx = U.fitCanvas(canvas, W0, H0);
-    const PAD = 22;
+    const PAD = 20;
+    // The outer square is the outer edge of the boundary-condition band. The
+    // interior solution is drawn inset by BW, so the fixed boundary data g
+    // reads as a distinct frame around the (noisy) interior being solved —
+    // this is what visually disentangles "boundary condition" from "interior".
+    const BW = 12;
     const X0 = PAD, Y0 = PAD, X1 = W0 - PAD, Y1 = H0 - PAD;
-    const SW = X1 - X0, SH = Y1 - Y0;
+    const IX0 = X0 + BW, IY0 = Y0 + BW, IX1 = X1 - BW, IY1 = Y1 - BW;
+    const ISW = IX1 - IX0, ISH = IY1 - IY0;
 
     // --- the BVP (identical to the Brownian figure) ---
     function gAtS(s) { return Math.cos(2 * Math.PI * s); }
@@ -39,7 +52,6 @@
       return gAtS(s);
     }
     function colorFor(val) { return U.colormap(0.5 + 0.5 * val, theme); }
-    function uvToScreen(u, v) { return [X0 + u * SW, Y1 - v * SH]; }
 
     // Walk on Spheres estimate of u at an interior point: jump to a
     // random point on the largest inscribed circle until close to the
@@ -65,7 +77,7 @@
 
     // --- interior field on a regular grid ---
     const G = 44;
-    const cell = SW / G;
+    const cell = ISW / G;
     const cxArr = new Float64Array(G * G), cyArr = new Float64Array(G * G);
     for (let j = 0; j < G; j++) {
       for (let i = 0; i < G; i++) {
@@ -92,8 +104,8 @@
         for (let i = 0; i < G; i++) {
           const val = sum[j * G + i] * inv;
           ctx.fillStyle = colorFor(val);
-          const sx = X0 + (i / G) * SW;
-          const sy = Y1 - ((j + 1) / G) * SH;
+          const sx = IX0 + (i / G) * ISW;
+          const sy = IY1 - ((j + 1) / G) * ISH;
           // Slight overdraw so neighbouring cells leave no seam.
           ctx.fillRect(Math.floor(sx), Math.floor(sy), Math.ceil(cell) + 1, Math.ceil(cell) + 1);
         }
@@ -110,52 +122,98 @@
       }
       return grad;
     }
-    function drawBoundary() {
+    // The boundary condition g drawn as a thick band framing the domain.
+    // Stroked along the band midline (inset BW/2 from the outer edge) with
+    // square caps so the four corners meet flush. This band is the *given*
+    // data; the interior square inside it is what the walks are solving.
+    function drawBoundaryBand() {
+      const m = BW / 2;
+      const ax = X0 + m, ay = Y0 + m, bx = X1 - m, by = Y1 - m;
       ctx.save();
-      ctx.lineWidth = 4;
+      ctx.lineWidth = BW;
       ctx.lineCap = 'square';
-      ctx.strokeStyle = sideGradient(X0, Y1, X1, Y1, 0.00, 0.25);
-      ctx.beginPath(); ctx.moveTo(X0, Y1); ctx.lineTo(X1, Y1); ctx.stroke();
-      ctx.strokeStyle = sideGradient(X1, Y1, X1, Y0, 0.25, 0.50);
-      ctx.beginPath(); ctx.moveTo(X1, Y1); ctx.lineTo(X1, Y0); ctx.stroke();
-      ctx.strokeStyle = sideGradient(X1, Y0, X0, Y0, 0.50, 0.75);
-      ctx.beginPath(); ctx.moveTo(X1, Y0); ctx.lineTo(X0, Y0); ctx.stroke();
-      ctx.strokeStyle = sideGradient(X0, Y0, X0, Y1, 0.75, 1.00);
-      ctx.beginPath(); ctx.moveTo(X0, Y0); ctx.lineTo(X0, Y1); ctx.stroke();
+      ctx.strokeStyle = sideGradient(ax, by, bx, by, 0.00, 0.25);
+      ctx.beginPath(); ctx.moveTo(ax, by); ctx.lineTo(bx, by); ctx.stroke();
+      ctx.strokeStyle = sideGradient(bx, by, bx, ay, 0.25, 0.50);
+      ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, ay); ctx.stroke();
+      ctx.strokeStyle = sideGradient(bx, ay, ax, ay, 0.50, 0.75);
+      ctx.beginPath(); ctx.moveTo(bx, ay); ctx.lineTo(ax, ay); ctx.stroke();
+      ctx.strokeStyle = sideGradient(ax, ay, ax, by, 0.75, 1.00);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax, by); ctx.stroke();
+      ctx.restore();
+    }
+
+    // Crisp solid divider between the boundary band and the interior, so the
+    // two never blur together (even once the interior converges to g at the
+    // edge). Solid — a Dirichlet edge, not a dashed Neumann one.
+    function drawDivider() {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(17,17,17,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(IX0, IY0, ISW, ISH);
       ctx.restore();
     }
 
     // --- controls ---
-    // The figure runs continuously: every frame it adds `speed` more walks
-    // per pixel, so the interior denoises on load and then keeps refining
-    // forever — no hold, no reset, never stops. The refresh-rate slider
-    // sets how many walks are added per frame; the button pauses/resumes.
-    let speed = parseFloat(rateSlider.value) || 1;  // walks per frame (may be < 1)
+    // Blog: the denoise LOOPS — noise → smooth → brief hold → restart — so a
+    // reader scrolling past at any moment always catches some noise. The one
+    // slider sets the pace. Studio: runs continuously with manual play/pause
+    // and a Restart button, for authoring/recording.
+    // Blog: fixed pace (0.5 walks/frame). Studio: from the panel slider.
+    let speed = STUDIO ? (rateSlider ? (parseFloat(rateSlider.value) || 1) : 1) : 0.5;
     let playing = true;
-    let acc = 0;                                     // carries the fractional remainder
+    let acc = 0;          // carries the fractional walk remainder
+    let holdT = 0;        // (loop) timestamp to restart the noise after the smooth hold
+
+    const LOOP = !STUDIO;
+    const TARGET = 120;   // walks/pixel at which the field reads as smooth
+    const HOLD_MS = 650;  // dwell on the smooth solution before restarting
+    if (progressSlider) progressSlider.max = TARGET; // keep the slider scale in sync
 
     function syncRate() { if (rateLabel) rateLabel.textContent = String(speed); }
     function syncBtn() { if (playBtn) playBtn.textContent = playing ? '⏸ Pause' : '▶ Play'; }
 
-    rateSlider.addEventListener('input', () => { speed = parseFloat(rateSlider.value) || 0.25; syncRate(); });
+    if (rateSlider) rateSlider.addEventListener('input', () => {
+      speed = parseFloat(rateSlider.value) || 0.25; syncRate();
+    });
     if (playBtn) playBtn.addEventListener('click', () => { playing = !playing; syncBtn(); });
     // Restart: clear back to noise and start the denoise over. Preserve
     // the current play/pause state — restarting while paused stays paused
     // on the fresh-noise frame until you press Play.
     if (restartBtn) restartBtn.addEventListener('click', () => { resetField(); acc = 0; accumulate(1); });
 
+    // Add `speed` walks/pixel this frame; fractional speeds add a walk only
+    // every few frames via the carried remainder.
+    function step() {
+      acc += speed;
+      const n = Math.floor(acc);
+      if (n > 0) { accumulate(n); acc -= n; }
+    }
+
     // --- main loop ---
-    function tick() {
-      if (playing) {
-        // Accumulate `speed` walks per frame; fractional speeds add a walk
-        // only every few frames via the carried remainder.
-        acc += speed;
-        const n = Math.floor(acc);
-        if (n > 0) { accumulate(n); acc -= n; }
+    function tick(t) {
+      if (LOOP) {
+        if (holdT) {
+          if (t >= holdT) { resetField(); acc = 0; accumulate(1); holdT = 0; }
+        } else {
+          step();
+          if (cur >= TARGET) holdT = t + HOLD_MS; // reached smooth → hold, then restart
+        }
+      } else if (playing) {
+        step();
+      }
+      // Drive the read-only blog slider + label from the sample count so far.
+      if (progressSlider) {
+        const s = Math.min(TARGET, Math.round(cur));
+        progressSlider.value = s;
+        // WebKit has no native range-progress fill; drive it via --fill.
+        progressSlider.style.setProperty('--fill', (100 * s / TARGET) + '%');
+        if (sampleLabel) sampleLabel.textContent = String(s);
       }
       ctx.clearRect(0, 0, W0, H0);
       drawField();
-      drawBoundary();
+      drawBoundaryBand();
+      drawDivider();
       requestAnimationFrame(tick);
     }
 

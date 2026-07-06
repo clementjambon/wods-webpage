@@ -258,15 +258,16 @@
 
     <p>Doing this independently at <i>every</i> interior point gives us the whole solution. With only a few walks per
       point the estimate is noisy, but as we average more and more, the Monte Carlo variance vanishes and the smooth
-      harmonic solution emerges. The figure below loops this automatically; pause and drag the slider to inspect any
-      noise level:</p>
+      harmonic solution emerges. The figure below loops this automatically — noise sharpening into the solution, over
+      and over — with the slider setting the pace:</p>
 
     <figure class="figure" id="idenoise">
       <div class="figure-body">
         <div class="canvas-wrap">
-          <div class="canvas-row">
+          <div class="canvas-row" style="justify-content:center;">
             <div class="canvas-col"><canvas class="diagram"></canvas></div>
-            <div class="controls">
+            <!-- Studio: full authoring panel (play/pause, restart, rate). -->
+            <div class="controls studio-only">
               <label>Refresh rate: <span data-role="rate">1</span> walks/frame</label>
               <input type="range" data-role="rate-slider" min="0.25" max="4" step="0.25" value="1" />
               <div class="slider-ends"><span>slow</span><span>fast</span></div>
@@ -280,6 +281,14 @@
                 independent Walk-on-Spheres estimates of $u(x)=\mathbb{E}[g(Z_\tau)]$. Averaging more walks per pixel
                 denoises the field into the harmonic solution. It runs continuously; the slider sets how fast.</p>
             </div>
+          </div>
+          <!-- Public page: a read-only slider that self-advances to show the
+               number of Monte-Carlo samples accumulated so far in the current
+               (looping) denoise. The pace is fixed; there is no manual control. -->
+          <div class="controls blog-only" style="max-width:300px; margin:14px auto 0;">
+            <label>Number of samples: <span data-role="sample-count">1</span></label>
+            <input type="range" class="progress-slider" data-role="progress" min="0" max="120" step="1" value="1"
+              style="pointer-events:none;" tabindex="-1" aria-hidden="true" />
           </div>
         </div>
         <div class="figure-caption"><b>Denoising the BVP solution.</b> The same square Dirichlet problem, solved

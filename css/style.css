@@ -293,6 +293,55 @@ blockquote { margin: 0 0 18px; padding: 0; border-left: none; font-style: normal
 .controls label:first-child { margin-top: 0; }
 .controls input[type="range"] { width: 100%; }
 
+/* Read-only denoise progress bar: the filled portion shows the solution
+ * colormap gradient (blue → red) over a plain track, with a circular knob
+ * riding the fill. JS drives --fill (a %) each frame for WebKit; Firefox
+ * fills natively via ::-moz-range-progress from the value. */
+input[type="range"].progress-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  background: transparent;
+  margin: 8px 0 2px;
+  outline: none;
+}
+input[type="range"].progress-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, #ffffff, var(--color-accent)) left center / var(--fill, 0%) 100% no-repeat,
+    var(--color-rule);
+}
+input[type="range"].progress-slider::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-rule);
+}
+input[type="range"].progress-slider::-moz-range-progress {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ffffff, var(--color-accent));
+}
+input[type="range"].progress-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid rgba(17,17,17,0.55);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  margin-top: -4px; /* center the 16px knob on the 8px track */
+}
+input[type="range"].progress-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid rgba(17,17,17,0.55);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+
 /* Colormap slider — track is the heatmap gradient, thumb shows the
  * brush value. Cross-browser styling for WebKit and Firefox. */
 input[type="range"].colormap-slider {
@@ -441,6 +490,9 @@ input[type="range"].colormap-slider.plain-slider {
    carries the .studio class. */
 .studio-only { display: none; }
 body.studio .studio-only { display: block; }
+/* Inverse: shown on the public page, hidden in the studio. */
+.blog-only { display: block; }
+body.studio .blog-only { display: none; }
 
 .controls .checks { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
 .controls .checks label {
