@@ -406,6 +406,44 @@
     </section>
 
     <section class="studio-item">
+      <h3 class="studio-label">#coedge-fig · WoDS.interactiveCoedge <a class="studio-open" data-only="coedge-fig" href="?only=coedge-fig">open standalone ↗</a></h3>
+    <figure class="figure" id="coedge-fig">
+          <div class="figure-body">
+            <div class="canvas-wrap">
+              <div class="canvas-row">
+                <div class="canvas-col"><canvas class="diagram"></canvas></div>
+                <div class="controls">
+                  <label>Tiling resolution: <span data-role="tiles-label">6×6</span></label>
+                  <input type="range" data-role="tiles" min="2" max="10" step="1" value="6" />
+                  <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1×</span></label>
+                  <input type="range" data-role="speed" min="0" max="5" step="1" value="2" />
+                  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;">
+                    <button data-role="new">↻ New walk</button>
+                    <button data-role="play">⏸ Pause</button>
+                  </div>
+                  <div class="legend" style="margin-top:10px;">
+                    <span><i style="background:var(--color-interface)"></i> Tile interfaces</span>
+                    <span><i style="background:rgba(42,95,184,0.35)"></i> Current co-edge subdomain</span>
+                    <span><i style="background:var(--color-neumann)"></i> Neumann obstacles</span>
+                  </div>
+                  <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">The walker hops from
+                    interface to interface. At each hop it sits on a tile interface; the two tiles sharing that edge form
+                    a <b>co-edge subdomain</b> (blue). It then jumps to a uniformly random exit on that subdomain's
+                    boundary — rejection-sampling any point inside the obstacles — which lands on a new interface and
+                    re-centers the next co-edge subdomain, until it reaches the global boundary $Z_\tau$. (A naive,
+                    educational cartoon: uniform over exits, not the true harmonic measure.)</p>
+                </div>
+              </div>
+            </div>
+            <div class="figure-caption"><b>Walk on Co-edge Subdomains.</b> Starting from a point $x$ on an interface, the
+              walk advances by first-passage inside the co-edge subdomain straddling its current interface — the union of
+              the two adjacent tiles. Each exit lands on a new interface, re-centering the subdomain, until the walk is
+              absorbed on the global Dirichlet boundary at $Z_\tau$.</div>
+          </div>
+        </figure>
+    </section>
+
+    <section class="studio-item">
       <h3 class="studio-label">#amc-anim · WoDS.autoMarkov <a class="studio-open" data-only="amc-anim" href="?only=amc-anim">open standalone ↗</a></h3>
     <figure class="figure" id="amc-anim">
           <div class="figure-body">
@@ -643,6 +681,7 @@
   <script src="js/interactive_poisson_solution.js"></script>
   <script src="js/interactive_subdomain_kernel.js"></script>
   <script src="js/interactive_binned_operator.js"></script>
+  <script src="js/interactive_coedge.js"></script>
   <script src="js/interactive_markov.js"></script>
   <script src="js/interactive_pipeline.js"></script>
   <script src="js/interactive_tradeoff.js"></script>
@@ -697,6 +736,7 @@
       { const el = document.getElementById('i3b'); if (el) WoDS.interactivePoissonSolution(el); }
       { const el = document.getElementById('subkernel'); if (el) WoDS.interactiveSubdomainKernel(el); }
       { const el = document.getElementById('binop'); if (el) WoDS.interactiveBinnedOperator(el); }
+      { const el = document.getElementById('coedge-fig'); if (el) WoDS.interactiveCoedge(el); }
       { const el = document.getElementById('amc-anim'); if (el) WoDS.autoMarkov(el); }
       { const el = document.getElementById('imc'); if (el) WoDS.interactiveMarkov(el); }
       { const el = document.getElementById('pipeline-fig'); if (el) WoDS.interactivePipeline(el); }
