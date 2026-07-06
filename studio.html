@@ -54,7 +54,7 @@
                   <label style="margin-top:14px;">Presets</label>
                   <div class="presets" data-role="presets"></div>
                   <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click and paint inside the
-                    dashed boundary band to paint Dirichlet values $g$. The interior satisfies $\Delta u=0$.</p>
+                    outer boundary band to paint Dirichlet values $g$. The interior satisfies $\Delta u=0$.</p>
                 </div>
               </div>
             </div>
@@ -85,7 +85,8 @@
                   <div class="presets" data-role="presets"></div>
                   <div class="legend" style="margin-top:10px;">
                     <span><i style="background:var(--color-dirichlet)"></i> Dirichlet (paint here)</span>
-                    <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann (zero-flux)</span>
+                    <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann
+                      (zero-flux)</span>
                   </div>
                   <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click and paint the
                     Dirichlet band as before. The interior obstacle (dashed, grey) enforces $\partial u/\partial n = 0$ —
@@ -162,9 +163,10 @@
                   style="pointer-events:none;" tabindex="-1" aria-hidden="true" />
               </div>
             </div>
-            <div class="figure-caption"><b>Denoising the BVP solution.</b> The same square Dirichlet problem, solved
-              everywhere at once by Monte Carlo. Each pixel averages many random walks; with few walks the interior is
-              noisy, and as the count grows the variance vanishes to reveal the smooth solution $u$.</div>
+            <div class="figure-caption"><b>Progressive Monte Carlo estimate.</b> The same square Dirichlet problem, solved
+              everywhere for each pixel by Monte Carlo. Each pixel averages many random walks: with few samples the interior
+              is
+              noisy, while variance progressively vanishes as the number of samples grows.</div>
           </div>
         </figure>
     </section>
@@ -193,7 +195,8 @@
                   <div class="stat" data-role="avg">Avg steps: —</div>
                   <div class="legend">
                     <span><i style="background:var(--color-dirichlet)"></i> Dirichlet (absorbing)</span>
-                    <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann (reflecting)</span>
+                    <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann
+                      (reflecting)</span>
                   </div>
                   <div class="studio-only">
                     <div class="checks">
@@ -242,7 +245,8 @@
                   <div class="legend">
                     <span><i style="background:var(--color-dirichlet)"></i> "Physical" Dirichlet (absorbing)</span>
                     <span><i style="background:var(--color-interface)"></i> "Artificial" interfaces (absorbing)</span>
-                    <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann (reflecting)</span>
+                    <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann
+                      (reflecting)</span>
                   </div>
                   <div class="studio-only">
                     <div class="checks">
@@ -378,7 +382,8 @@
               <div class="canvas-row" style="justify-content:center;">
                 <div class="canvas-col"><canvas class="diagram" data-role="decomp"></canvas></div>
                 <div class="canvas-col"><canvas class="diagram" data-role="operator"></canvas></div>
-                <div class="controls" style="flex:1 1 480px; max-width:none; display:grid; grid-template-columns:1fr 1fr; gap:0 22px; align-items:start;">
+                <div class="controls"
+                  style="flex:1 1 480px; max-width:none; display:grid; grid-template-columns:1fr 1fr; gap:0 22px; align-items:start;">
                   <div>
                     <label>Solver</label>
                     <div class="solver-toggle" data-role="solver-toggle">
@@ -398,14 +403,17 @@
                       <div style="height:8px; background:var(--color-rule); border-radius:4px; overflow:hidden;">
                         <div data-role="progress-fill" style="height:100%; width:0%; background:var(--color-accent);"></div>
                       </div>
-                      <div data-role="progress-text" style="font-size:0.72rem; color:var(--color-text-muted); margin-top:4px;"></div>
+                      <div data-role="progress-text"
+                        style="font-size:0.72rem; color:var(--color-text-muted); margin-top:4px;"></div>
                     </div>
-                    <div class="stat" data-role="status" style="margin-top:10px;">Pick a subdomain, then click “Precompute”.</div>
+                    <div class="stat" data-role="status" style="margin-top:10px;">Pick a subdomain, then click “Precompute”.
+                    </div>
                     <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
                       <button data-role="toggle-grid">Hide subgrid</button>
                       <button data-role="toggle-kernel">Hide source &amp; kernel</button>
                     </div>
-                    <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click a tile on the left to
+                    <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click a tile on the left
+                      to
                       choose a subdomain, then Precompute its boundary first-passage histogram for every interior bucket
                       (buckets inside the Neumann geometry are skipped). Drag $x$ — it snaps to the nearest bucket — to
                       inspect each precomputed kernel. Nothing runs until you click Precompute.</p>
@@ -568,7 +576,8 @@
     
                   <div class="legend" style="margin-top:10px;">
                     <span><i style="background:var(--color-dirichlet)"></i> Dirichlet boundary</span>
-                    <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann obstacle</span>
+                    <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann
+                      obstacle</span>
                     <span><i style="background:var(--color-interface)"></i> Tile interfaces</span>
                   </div>
                   <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Slide through the pipeline.
@@ -661,6 +670,10 @@
     
                   <label style="margin-top:14px;">Scene</label>
                   <div class="presets" data-role="scene-presets"></div>
+    
+                  <div class="studio-only" style="margin-top:14px;">
+                    <button data-role="toggle-interfaces">Hide interfaces</button>
+                  </div>
     
                   <div class="stat" style="margin-top:14px;">
                     MC-estimated tiles: <span data-role="mc-label">—</span><br />

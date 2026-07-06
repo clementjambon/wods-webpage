@@ -73,6 +73,12 @@
     let sceneIdx = 0;
     let T = parseInt(tilesSlider.value);
 
+    // Tile interfaces (the T×T grid lines) are shown by default on the public
+    // page. The studio adds a button to toggle them for cleaner recordings.
+    const STUDIO = W.WoDS.inStudio;
+    const toggleIfaceBtn = STUDIO ? root.querySelector('[data-role="toggle-interfaces"]') : null;
+    let showInterfaces = true;
+
     // Tile fills: amber = intersects geometry (needs Monte Carlo),
     // green = empty (shares the single precomputed operator).
     const MC_FILL = 'rgba(255, 196, 0, 0.42)';
@@ -137,6 +143,20 @@
     }
 
     // ---- Drawing -----------------------------------------------------
+    // Tile interfaces: the T×T grid of artificial (absorbing) interfaces.
+    function drawInterfaces() {
+      ctx.save();
+      ctx.strokeStyle = theme.interface;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.55;
+      for (let k = 1; k < T; k++) {
+        const t = (k / T) * size;
+        ctx.beginPath(); ctx.moveTo(t, 0); ctx.lineTo(t, size); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, t); ctx.lineTo(size, t); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     function drawObstacles(cx, scene, pxs) {
       cx.fillStyle = theme.neumannFill;
       cx.strokeStyle = theme.neumann;
@@ -170,6 +190,9 @@
         ctx.fillStyle = t.mc ? MC_FILL : EMPTY_FILL;
         ctx.fillRect(x, y, w, h);
       }
+
+      // Tile interfaces (grid lines) over the fills.
+      if (showInterfaces) drawInterfaces();
 
       // Obstacles.
       drawObstacles(ctx, scene, size);
@@ -229,6 +252,19 @@
       render();
     });
     tilesLabel.textContent = `${T}×${T}`;
+
+    // ---- Studio-only interface toggle --------------------------------
+    if (toggleIfaceBtn) {
+      const syncIfaceBtn = () => {
+        toggleIfaceBtn.textContent = showInterfaces ? 'Hide interfaces' : 'Show interfaces';
+      };
+      toggleIfaceBtn.addEventListener('click', () => {
+        showInterfaces = !showInterfaces;
+        syncIfaceBtn();
+        render();
+      });
+      syncIfaceBtn();
+    }
 
     render();
   }
