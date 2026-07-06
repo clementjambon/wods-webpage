@@ -210,7 +210,7 @@
       }
       const m = Math.max(1, ...counts);
       const bw = HW / bins;
-      hctx.fillStyle = theme.interface;
+      hctx.fillStyle = theme.accent; // match the Walk-on-Spheres/Stars (i1) histogram
       for (let i = 0; i < bins; i++) {
         const h = (counts[i] / m) * (HH - 24);
         hctx.fillRect(i*bw, HH - 16 - h, bw - 1, h);

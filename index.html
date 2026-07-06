@@ -288,10 +288,10 @@
               style="pointer-events:none;" tabindex="-1" aria-hidden="true" />
           </div>
         </div>
-        <div class="figure-caption"><b>Progressive Monte Carlo estimate.</b> The same square Dirichlet problem, solved
-          everywhere for each pixel by Monte Carlo. Each pixel averages many random walks: with few samples the interior
+        <div class="figure-caption"><b>Progressive Monte Carlo estimate.</b> The same square Dirichlet problem, now
+          solved at every pixel by Monte Carlo. Each pixel averages many random walks: with few samples the interior
           is
-          noisy, while variance progressively vanishes as the number of samples grows.</div>
+          noisy, and the noise gradually fades as the number of samples grows.</div>
       </div>
     </figure>
 
@@ -308,13 +308,13 @@
         exactly, we introduce a thin $\epsilon$-shell around it where walks are absorbed when they reach it.</fn>.</p>
 
     <p>The entire process is illustrated in the interactive figure below. For Neumann boundary conditions, it turns out
-      that there is a special variant of WoS called <i>Walk on Stars</i><cite data-key="sawhney2023wost"></cite> (WoSt)
-      <fn>As its name suggests, this method
-        "walks on stars" to better handle Neumann (reflective) boundary conditions. Note that the interactive figure
-        below does not properly visualize these star-shaped domains. Rather, we visualize the "star radius" of the
-        enclosing
-        ball of each star.</fn>
-      . If you're interested in learning more about Monte Carlo methods for PDEs, there's a great course and resources
+      that there is a special variant of WoS called <i>Walk on Stars</i><cite data-key="sawhney2023wost"></cite>
+      (WoSt)<fn>As its name suggests, this method
+        "walks on stars" to better handle Neumann (reflective) boundary conditions. Note that from the interactive
+        figure
+        below, it isn't so obvious. The reason is that with rectangles, due to corners, star-shaped domains look
+        basically like slices of a sphere.</fn>. If you're interested in learning more about Monte Carlo methods for
+      PDEs, there's a great course and resources
       available <a href="https://rohan-sawhney.github.io/mcgp-resources/" target="_blank"
         rel="noopener noreferrer">here</a><cite data-key="sawhney2025star"></cite>.
     </p>
@@ -1038,11 +1038,11 @@
       The last problem is that, so far, we've only seen
       in <a class="ref" data-ref="poisson-kernel"></a> how to jump from the
       inside of a subdomain to one of its interfaces and not from one interface to another.
-      The fix is to view each interface through <i>another decomposition</i>
-      <fn>This time it is an overlapping
+      The fix is to view each interface through <i>another decomposition</i><fn>This time it is an overlapping
         decomposition.</fn> of the domain, one where the
       interface sits in the interior of a subdomain. On a grid, that subdomain is just the two cells sharing the
-      edge, and its boundary is the neighboring interfaces. We call these <i>“co-edge” subdomains</i>.
+      edge, and its boundary is made of the neighboring interfaces (or pieces of the global boundary). We call
+      these <i>“co-edge” subdomains</i>.
     </p>
 
     <figure class="figure" id="coedge-fig">
@@ -1096,7 +1096,8 @@
 
     <p>With this, we can define a discrete Markov chain where the interfaces are the transient states, the global
       Dirichlet boundary gives the absorbing states, and the first-passage probabilities between interfaces define the
-      transitions and are estimated using the strategy defined in <a class="ref" data-ref="poisson-kernel"></a>.
+      transitions and are estimated using the strategy defined in <a class="ref" data-ref="poisson-kernel"></a>
+      applied to the co-edge subdomains.
       The Markov chain formalism from <a class="ref" data-ref="markov"></a> lets us solve for interface values directly
       through a deterministic (sparse) linear solve — sidestepping the relatively long, high-variance random walks that
       would
