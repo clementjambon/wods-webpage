@@ -34,6 +34,7 @@
     const speedLabel = root.querySelector('[data-role="speed-label"]');
     const newBtn = root.querySelector('[data-role="new"]');
     const playBtn = root.querySelector('[data-role="play"]');
+    const releaseBtn = root.querySelector('[data-role="release"]');
 
     const W0 = 400, H0 = 400, PAD = 44, SQ = W0 - 2 * PAD;
     const ctx = U.fitCanvas(canvas, W0, H0);
@@ -43,6 +44,7 @@
     function speedFor(v) { return SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, v | 0))]; }
     let speed = speedSlider ? speedFor(parseInt(speedSlider.value)) : 1;
     let paused = false;
+    let pin = null; // clicked start location {x,y,axis,idx}, or null for random
 
     function toScreen(x, y) { return [PAD + x * SQ, PAD + (1 - y) * SQ]; }
 
@@ -89,6 +91,27 @@
       return null;
     }
 
+    // Canvas coords -> unit-square coords.
+    function evToScene(e) {
+      const r = canvas.getBoundingClientRect();
+      const cx = (e.clientX - r.left) / r.width * W0;
+      const cy = (e.clientY - r.top) / r.height * H0;
+      return [(cx - PAD) / SQ, 1 - (cy - PAD) / SQ];
+    }
+
+    // Snap a click to the nearest interior interface: the closer of the
+    // nearest vertical / horizontal grid line, with the point placed at
+    // the click's position along it.
+    function pickInterface(cx, cy) {
+      const iv = Math.round(cx * n), ih = Math.round(cy * n);
+      if (Math.abs(cx - iv / n) <= Math.abs(cy - ih / n)) {
+        const idx = Math.min(n - 1, Math.max(1, iv));
+        return { x: idx / n, y: Math.min(0.98, Math.max(0.02, cy)), axis: 'v', idx };
+      }
+      const idx = Math.min(n - 1, Math.max(1, ih));
+      return { x: Math.min(0.98, Math.max(0.02, cx)), y: idx / n, axis: 'h', idx };
+    }
+
     function sampleStart() {
       for (let t = 0; t < 400; t++) {
         const axis = Math.random() < 0.5 ? 'v' : 'h';
@@ -106,7 +129,7 @@
     // One run: a polyline of hop points plus the co-edge rectangle used
     // for each hop.
     function buildRun() {
-      const s = sampleStart();
+      const s = pin || sampleStart();
       let axis = s.axis, idx = s.idx;
       const pts = [{ x: s.x, y: s.y }];
       const rects = [];
@@ -287,11 +310,26 @@
     }
 
     // ---- Controls ----------------------------------------------------
+    function setPin(p) {
+      pin = p;
+      if (releaseBtn) releaseBtn.style.display = p ? '' : 'none';
+      restart();
+    }
+
+    // Click an interface to launch walks from that location.
+    canvas.addEventListener('pointerdown', (e) => {
+      const [x, y] = evToScene(e);
+      if (x < 0 || x > 1 || y < 0 || y > 1) return;
+      const p = pickInterface(x, y);
+      if (inObstacle(p.x, p.y, 0.005)) return; // don't pin inside the geometry
+      setPin(p);
+    });
+
     if (tileSlider) {
       tileSlider.addEventListener('input', () => {
         n = parseInt(tileSlider.value);
         if (tileLabel) tileLabel.textContent = `${n}×${n}`;
-        restart();
+        setPin(null); // grid changed — drop any pinned interface
       });
     }
     if (speedSlider) {
@@ -303,6 +341,7 @@
       upd();
     }
     if (newBtn) newBtn.addEventListener('click', restart);
+    if (releaseBtn) releaseBtn.addEventListener('click', () => setPin(null));
     if (playBtn) {
       playBtn.addEventListener('click', () => {
         paused = !paused;

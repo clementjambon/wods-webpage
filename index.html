@@ -652,6 +652,7 @@
               <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;">
                 <button data-role="new">↻ New walk</button>
                 <button data-role="play">⏸ Pause</button>
+                <button data-role="release" style="display:none;">✕ Release</button>
               </div>
               <div class="legend" style="margin-top:10px;">
                 <span><i style="background:var(--color-interface)"></i> Tile interfaces</span>
@@ -663,7 +664,8 @@
                 a <b>co-edge subdomain</b> (blue). It then jumps to a uniformly random exit on that subdomain's
                 boundary — rejection-sampling any point inside the obstacles — which lands on a new interface and
                 re-centers the next co-edge subdomain, until it reaches the global boundary $Z_\tau$. (A naive,
-                educational cartoon: uniform over exits, not the true harmonic measure.)</p>
+                educational cartoon: uniform over exits, not the true harmonic measure.) Click an interface to launch
+                walks from that spot; <b>Release</b> resumes random starts.</p>
             </div>
           </div>
         </div>
