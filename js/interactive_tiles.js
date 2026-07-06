@@ -25,8 +25,12 @@
     const tileLabel = root.querySelector('[data-role="tiles-label"]');
     const avgLabel = root.querySelector('[data-role="avg"]');
     const resetBtn = root.querySelector('button[data-role="reset"]');
-    const speedSlider = root.querySelector('input[data-role="speed"]');
-    const speedLabel = root.querySelector('[data-role="speed-label"]');
+    // Studio-only controls (hidden on the public page). Looked up only in the
+    // studio so the public figure keeps its original minimal behavior: 1×
+    // speed, interfaces and walks always shown.
+    const STUDIO = W.WoDS.inStudio;
+    const speedSlider = STUDIO ? root.querySelector('input[data-role="speed"]') : null;
+    const speedLabel = STUDIO ? root.querySelector('[data-role="speed-label"]') : null;
 
     const W0 = 380, H0 = 380;
     const ctx = U.fitCanvas(canvas, W0, H0);
@@ -36,8 +40,8 @@
     const toggle = root.querySelector('[data-role="solver-toggle"]');
     let solverMode = toggle ? (toggle.querySelector('input:checked').value) : 'wost';
 
-    const showIfaceCb = root.querySelector('input[data-role="show-interfaces"]');
-    const showWalksCb = root.querySelector('input[data-role="show-walks"]');
+    const showIfaceCb = STUDIO ? root.querySelector('input[data-role="show-interfaces"]') : null;
+    const showWalksCb = STUDIO ? root.querySelector('input[data-role="show-walks"]') : null;
     let showInterfaces = showIfaceCb ? showIfaceCb.checked : true;
     let showWalks = showWalksCb ? showWalksCb.checked : true;
     // Animation speed multiplier (1 = baseline 18ms/step). The slider is

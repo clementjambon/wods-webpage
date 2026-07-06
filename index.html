@@ -174,7 +174,7 @@
               <div class="presets" data-role="presets"></div>
               <div class="legend" style="margin-top:10px;">
                 <span><i style="background:var(--color-dirichlet)"></i> Dirichlet (paint here)</span>
-                <span><i style="background:var(--color-neumann)"></i> Neumann (zero-flux)</span>
+                <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann (zero-flux)</span>
               </div>
               <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click and paint the dashed
                 Dirichlet band as before. The interior obstacle (dashed blue) enforces $\partial u/\partial n = 0$ —
@@ -245,7 +245,7 @@
               </div>
             </div>
           </div>
-          <div style="text-align:center; margin-top:12px;">
+          <div class="studio-only" style="text-align:center; margin-top:12px;">
             <button data-role="drop" class="panel-btn">▶ Drop particle</button>
             <button data-role="clear" class="panel-btn" style="margin-left:8px;">✕ Clear</button>
           </div>
@@ -325,18 +325,22 @@
               </div>
               <label style="margin-top:14px;">Neumann obstacles: <span data-role="obstacles-label">10</span></label>
               <input type="range" data-role="obstacles" min="0" max="12" step="1" value="10" />
-              <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1.00×</span></label>
-              <input type="range" data-role="speed" min="-2" max="0" step="0.02" value="0" />
-              <label style="margin-top:14px;">ε-shell: <span data-role="eps-label">1e−2</span></label>
-              <input type="range" data-role="epsilon" min="-3" max="-1" step="1" value="-2" />
+              <div class="studio-only">
+                <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1.00×</span></label>
+                <input type="range" data-role="speed" min="-2" max="0" step="0.02" value="0" />
+                <label style="margin-top:14px;">ε-shell: <span data-role="eps-label">1e−2</span></label>
+                <input type="range" data-role="epsilon" min="-3" max="-1" step="1" value="-2" />
+              </div>
               <div class="stat" data-role="avg">Avg steps: —</div>
               <div class="legend">
                 <span><i style="background:var(--color-dirichlet)"></i> Dirichlet (absorbing)</span>
-                <span><i style="background:var(--color-neumann)"></i> Neumann (reflecting)</span>
+                <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann (reflecting)</span>
               </div>
-              <div class="checks">
-                <label><input type="checkbox" data-role="show-jumps"> Show jump positions</label>
-                <label><input type="checkbox" data-role="clean-mode"> Clean mode (animated segments)</label>
+              <div class="studio-only">
+                <div class="checks">
+                  <label><input type="checkbox" data-role="show-jumps"> Show jump positions</label>
+                  <label><input type="checkbox" data-role="clean-mode"> Clean mode (animated segments)</label>
+                </div>
               </div>
               <label style="margin-top:14px;">Walk-length histogram (log)</label>
               <canvas class="hist"></canvas>
@@ -420,17 +424,21 @@
               </div>
               <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">1×1</span></label>
               <input type="range" data-role="tiles" min="1" max="12" step="1" value="6" />
-              <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1.00×</span></label>
-              <input type="range" data-role="speed" min="-2" max="0" step="0.02" value="0" />
+              <div class="studio-only">
+                <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1.00×</span></label>
+                <input type="range" data-role="speed" min="-2" max="0" step="0.02" value="0" />
+              </div>
               <div class="stat" data-role="avg">Avg steps: —</div>
               <div class="legend">
                 <span><i style="background:var(--color-dirichlet)"></i> "Physical" Dirichlet (absorbing)</span>
                 <span><i style="background:var(--color-interface)"></i> "Artificial" interfaces (absorbing)</span>
-                <span><i style="background:var(--color-neumann)"></i> Neumann (reflecting)</span>
+                <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann (reflecting)</span>
               </div>
-              <div class="checks">
-                <label><input type="checkbox" data-role="show-interfaces" checked> Show artificial interfaces</label>
-                <label><input type="checkbox" data-role="show-walks" checked> Show walks</label>
+              <div class="studio-only">
+                <div class="checks">
+                  <label><input type="checkbox" data-role="show-interfaces" checked> Show artificial interfaces</label>
+                  <label><input type="checkbox" data-role="show-walks" checked> Show walks</label>
+                </div>
               </div>
               <label style="margin-top:14px;">Walk-length histogram (log)</label>
               <canvas class="hist"></canvas>
@@ -558,7 +566,7 @@
       </div>
     </figure>
 
-    <figure class="figure" id="subkernel">
+    <figure class="figure studio-only" id="subkernel">
       <div class="figure-body">
         <div class="canvas-wrap">
           <div class="canvas-row" style="justify-content:center;">
@@ -590,7 +598,7 @@
       </div>
     </figure>
 
-    <figure class="figure" id="binop">
+    <figure class="figure studio-only" id="binop">
       <div class="figure-body">
         <div class="canvas-wrap">
           <div class="canvas-row" style="justify-content:center;">
@@ -1100,7 +1108,7 @@
 
               <div class="legend" style="margin-top:10px;">
                 <span><i style="background:var(--color-dirichlet)"></i> Dirichlet boundary</span>
-                <span><i style="background:var(--color-neumann)"></i> Neumann obstacle</span>
+                <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann obstacle</span>
                 <span><i style="background:var(--color-interface)"></i> Tile interfaces</span>
               </div>
               <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Slide through the pipeline.
@@ -1356,8 +1364,11 @@
       WoDS.interactiveTiles(document.getElementById('i2'));
       WoDS.interactivePoissonKernel(document.getElementById('i3'));
       WoDS.interactivePoissonSolution(document.getElementById('i3b'));
-      WoDS.interactiveSubdomainKernel(document.getElementById('subkernel'));
-      WoDS.interactiveBinnedOperator(document.getElementById('binop'));
+      // subkernel + binop are studio-only (presentation) figures: run them
+      // on studio.html but not on the public page. build-studio.js still
+      // matches these calls and re-emits them (unguarded) into studio.html.
+      if (WoDS.inStudio) WoDS.interactiveSubdomainKernel(document.getElementById('subkernel'));
+      if (WoDS.inStudio) WoDS.interactiveBinnedOperator(document.getElementById('binop'));
       WoDS.interactiveCoedge(document.getElementById('coedge-fig'));
       WoDS.autoMarkov(document.getElementById('amc-anim'));
       WoDS.interactiveMarkov(document.getElementById('imc'));

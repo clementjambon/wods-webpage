@@ -37,12 +37,16 @@
     const obstLabel = root.querySelector('[data-role="obstacles-label"]');
     const avgLabel = root.querySelector('[data-role="avg"]');
     const resetBtn = root.querySelector('button[data-role="reset"]');
-    const speedSlider = root.querySelector('input[data-role="speed"]');
-    const speedLabel = root.querySelector('[data-role="speed-label"]');
-    const showJumpsCb = root.querySelector('input[data-role="show-jumps"]');
-    const cleanModeCb = root.querySelector('input[data-role="clean-mode"]');
-    const epsSlider = root.querySelector('input[data-role="epsilon"]');
-    const epsLabel = root.querySelector('[data-role="eps-label"]');
+    // Studio-only controls (hidden on the public page). Looked up only in the
+    // studio so the public figure keeps its original minimal behavior: 1×
+    // speed, no jump dots, no clean-mode, default ε from config.
+    const STUDIO = W.WoDS.inStudio;
+    const speedSlider = STUDIO ? root.querySelector('input[data-role="speed"]') : null;
+    const speedLabel = STUDIO ? root.querySelector('[data-role="speed-label"]') : null;
+    const showJumpsCb = STUDIO ? root.querySelector('input[data-role="show-jumps"]') : null;
+    const cleanModeCb = STUDIO ? root.querySelector('input[data-role="clean-mode"]') : null;
+    const epsSlider = STUDIO ? root.querySelector('input[data-role="epsilon"]') : null;
+    const epsLabel = STUDIO ? root.querySelector('[data-role="eps-label"]') : null;
 
     const W0 = 380, H0 = 380;
     const ctx = U.fitCanvas(canvas, W0, H0);

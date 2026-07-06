@@ -19,12 +19,16 @@
   --color-text-muted: #6b6b6b;
   --color-rule: #e6e6e6;
 
-  --color-dirichlet: #b8362a;   /* warm */
-  --color-neumann:   #2a5fb8;   /* cool */
+  /* Paper palette: Dirichlet + Neumann both drawn black (Neumann stays
+     distinguishable by its dashed stroke and grey fill); WoS/WoSt
+     trajectories a soft dark blue. Matches the presentation/paper. */
+  --color-dirichlet: #000000;
+  --color-neumann:   #000000;
+  --color-neumann-fill: rgba(0,0,0,0.08); /* greyed reflecting region */
   --color-interface: #e88c30;   /* tile interfaces */
   --color-tile-grid: #888888;
-  --color-accent:    #2a5fb8;
-  --color-walk:      #1a1a1a;
+  --color-accent:    #2a5fb8;   /* WoSt spheres/stars, markers */
+  --color-walk:      #3a609c;   /* trajectory segments */
 
   /* Heatmap stops (warm/cool diverging, RdBu-ish reversed) */
   --hm-low:  #2a5fb8;

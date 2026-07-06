@@ -436,6 +436,12 @@ input[type="range"].colormap-slider.plain-slider {
 .controls .legend span { display: flex; align-items: center; gap: 6px; }
 .controls .legend i { display: inline-block; width: 14px; height: 4px; border-radius: 1px; }
 
+/* Studio-only content: the extra animation controls and the presentation-only
+   figures. Hidden on the public page; revealed on studio.html, whose <body>
+   carries the .studio class. */
+.studio-only { display: none; }
+body.studio .studio-only { display: block; }
+
 .controls .checks { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
 .controls .checks label {
   display: flex; align-items: center; gap: 8px;

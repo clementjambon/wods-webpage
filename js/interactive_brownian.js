@@ -104,8 +104,12 @@
     let landedAt = null;
     let landedT = 0;
 
-    const dropBtn = root.querySelector('[data-role="drop"]');
-    const clearBtn = root.querySelector('[data-role="clear"]');
+    // On the public page the walk auto-plays (drop → land → pause → repeat),
+    // as before. The studio adds "Drop particle" / "Clear" buttons so a walk
+    // can be triggered on cue for recording; there it starts idle instead.
+    const STUDIO = W.WoDS.inStudio;
+    const dropBtn = STUDIO ? root.querySelector('[data-role="drop"]') : null;
+    const clearBtn = STUDIO ? root.querySelector('[data-role="clear"]') : null;
 
     function renderTex(el, src, fallback) {
       if (window.katex) {
@@ -318,8 +322,11 @@
         const n = Math.min(8, Math.max(1, Math.floor(dt / 4)));
         for (let i = 0; i < n; i++) step();
         lastStep = t;
+      } else if (!STUDIO && phase === 'landed') {
+        // Public page: auto-restart a new walk shortly after landing.
+        if (t - landedT > 1100) { startWalk(); lastStep = t; }
       }
-      // idle/landed: the walk is fully button-driven, including while
+      // Studio idle/landed: the walk is fully button-driven, including while
       // recording, so you can time the drop against the capture. Capture
       // mode stays on only to render the canvas x / Z_tau labels.
 
@@ -331,7 +338,7 @@
       requestAnimationFrame(tick);
     }
 
-    goIdle();
+    if (STUDIO) goIdle(); else startWalk();
     requestAnimationFrame(tick);
   }
 

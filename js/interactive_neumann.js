@@ -274,7 +274,7 @@
       // Obstacle outline (dashed Neumann color).
       const sc = scenes[sceneIdx].make();
       ctx.save();
-      ctx.fillStyle = 'rgba(42,95,184,0.10)';
+      ctx.fillStyle = theme.neumannFill;
       ctx.strokeStyle = theme.neumann;
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 4]);
@@ -301,11 +301,12 @@
       ctx.fillRect(0, bandPx, bandPx, size - 2*bandPx);
       ctx.fillRect(size - bandPx, bandPx, bandPx, size - 2*bandPx);
 
-      ctx.strokeStyle = theme.text;
-      ctx.setLineDash([5, 4]);
+      // Inner edge of the band — solid, muted. Dashes are reserved for
+      // Neumann (reflecting) boundaries site-wide (the obstacle above),
+      // so the Dirichlet band uses a solid guide line here.
+      ctx.strokeStyle = 'rgba(17,17,17,0.5)';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(bandPx + 0.5, bandPx + 0.5, size - 2*bandPx - 1, size - 2*bandPx - 1);
-      ctx.setLineDash([]);
 
       ctx.strokeStyle = theme.text;
       ctx.lineWidth = 1.5;
@@ -487,7 +488,7 @@
       cx.lineWidth = 1.5;
       cx.strokeRect(1, 1, px - 2, px - 2);
       const { circles, rects } = sc.make();
-      cx.fillStyle = 'rgba(42,95,184,0.15)';
+      cx.fillStyle = theme.neumannFill;
       cx.strokeStyle = theme.neumann;
       cx.lineWidth = 1;
       cx.setLineDash([3, 2]);

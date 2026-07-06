@@ -124,12 +124,12 @@
       ctx.fillRect(0, bandPx, bandPx, size - 2*bandPx);       // left
       ctx.fillRect(size - bandPx, bandPx, bandPx, size - 2*bandPx); // right
 
-      // Inner edge of the band — bold dashed
-      ctx.strokeStyle = theme.text;
-      ctx.setLineDash([5, 4]);
+      // Inner edge of the band — solid, muted. Dashes are reserved for
+      // Neumann (reflecting) boundaries site-wide, so the Dirichlet band
+      // uses a solid guide line to avoid reading as a Neumann boundary.
+      ctx.strokeStyle = 'rgba(17,17,17,0.5)';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(bandPx + 0.5, bandPx + 0.5, size - 2*bandPx - 1, size - 2*bandPx - 1);
-      ctx.setLineDash([]);
 
       // Outer frame
       ctx.strokeStyle = theme.text;

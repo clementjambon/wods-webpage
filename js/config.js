@@ -37,6 +37,14 @@
   global.WoDS = global.WoDS || {};
   global.WoDS.theme = makeTheme;
 
+  // True on the animation studio page (studio.html sets <body class="studio">).
+  // Figures read this to enable studio-only controls (walk-speed, ε-shell,
+  // clean-mode, …) and to run studio-only figures. On the public page these
+  // controls are hidden (css .studio-only) and left unwired. This script tag
+  // lives at the end of <body>, so document.body is already parsed here.
+  global.WoDS.inStudio = !!(global.document.body &&
+    global.document.body.classList.contains('studio'));
+
   // ---- Per-figure color overrides --------------------------------
   // Merged onto the base theme by WoDS.themeFor(root), keyed on the
   // figure's root element id. Edit these to retune a figure's palette
@@ -48,23 +56,11 @@
   //   neumannFill – fill of the greyed Neumann region
   //   walk        – Walk-on-Spheres/Stars trajectory segment
   //   accent      – sphere/star outlines and active markers
-  global.WoDS.figureColors = {
-    // Slide palette: Dirichlet + Neumann both black (Neumann still
-    // distinguished by its dashed stroke and grey fill); WoS
-    // trajectory segments a dark blue instead of black.
-    i1: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#3a609c' },
-    i2: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#3a609c' },
-    i3: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
-    i3b: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
-    subkernel: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
-    binop: { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
-    'coedge-fig': { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.10)', walk: '#3a609c' },
-    'pipeline-fig': { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)', walk: '#3a609c' },
-    'locality-fig': { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)' },
-    // tradeoff-fig: only the left (domain) panel is routed through themeFor;
-    // the right (plot) panel keeps the base theme.
-    'tradeoff-fig': { dirichlet: '#000000', neumann: '#000000', neumannFill: 'rgba(0,0,0,0.06)' },
-  };
+  // The paper palette (black boundaries, grey Neumann fill, blue walk) now
+  // lives site-wide in css/theme.css, so no per-figure overrides are needed.
+  // This map is still honored by themeFor() below — add an entry here to
+  // retune one figure's colors without touching the global theme.
+  global.WoDS.figureColors = {};
 
   // Base theme with any per-figure overrides applied. Pass the
   // figure's root element (its id selects the override set).
