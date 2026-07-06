@@ -124,11 +124,26 @@
     renderTex(eqLabel, 'u(x) = \\mathbb{E}[g(Z_\\tau)]', 'u(x) = E[g(Z_τ)]');
     if (EXPORT && eqLabel) eqLabel.style.display = 'none'; // no room in export mode
 
-    // Position the static x label beside the start point.
-    {
-      const [sx, sy] = uvToScreen(START[0], START[1]);
-      xLabel.style.left = `${sx + 12}px`;
-      xLabel.style.top = `${sy - 10}px`;
+    // Overlay labels are positioned in canvas coordinate space (W0xH0),
+    // but on narrow viewports CSS scales the canvas down (max-width:100%),
+    // so a raw-pixel offset drifts off the shrunken canvas. Map each
+    // canvas-space point through the live display scale (and the canvas's
+    // offset within its positioned parent) before setting left/top.
+    function placeLabel(el, cx, cy) {
+      const scale = (canvas.clientWidth || W0) / W0;
+      el.style.left = `${canvas.offsetLeft + cx * scale}px`;
+      el.style.top = `${canvas.offsetTop + cy * scale}px`;
+    }
+
+    // Static x label sits beside the start point; the hit label is placed
+    // once the walk lands. Both are re-laid-out every tick so they track
+    // the canvas across viewport resizes.
+    const startScreen = uvToScreen(START[0], START[1]);
+    const xLabelPos = [startScreen[0] + 12, startScreen[1] - 10];
+    let hitLabelPos = null;
+    function layoutLabels() {
+      placeLabel(xLabel, xLabelPos[0], xLabelPos[1]);
+      if (hitLabelPos) placeLabel(label, hitLabelPos[0], hitLabelPos[1]);
     }
 
     // Park the particle at the start point without walking. The walk
@@ -138,6 +153,7 @@
       trail = [pos.slice()];
       phase = 'idle';
       landedAt = null;
+      hitLabelPos = null;
       label.style.opacity = '0';
     }
 
@@ -146,6 +162,7 @@
       trail = [pos.slice()];
       phase = 'walking';
       landedAt = null;
+      hitLabelPos = null;
       label.style.opacity = '0';
     }
 
@@ -203,10 +220,8 @@
       else if (landedAt[1] > 0.98) ly = sy - OFF;  // top wall: label above
       // For corners or middle-of-side, the offset above already moves
       // the label to the correct margin.
-      // Convert canvas coords -> CSS px (canvas is sized via fitCanvas
-      // to W0xH0 CSS pixels, so 1:1).
-      label.style.left = `${lx}px`;
-      label.style.top = `${ly}px`;
+      hitLabelPos = [lx, ly];
+      placeLabel(label, lx, ly);
       label.style.opacity = '1';
     }
 
@@ -339,6 +354,7 @@
       if (W.WoDS.captureMode) drawCaptureLabels(t);
       ctx.restore();
 
+      layoutLabels();
       syncLabelVisibility();
     }
 
