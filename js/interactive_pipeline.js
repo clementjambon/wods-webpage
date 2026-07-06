@@ -20,6 +20,8 @@
   const L = W.WoDS.laplace;
   const S = W.WoDS.solver;
 
+  const STAR_SAMPLES = 72; // angular samples per star-shaped step region
+
   function init(root) {
     const theme = W.WoDS.themeFor(root);
     const size = 380;
@@ -218,6 +220,43 @@
     function px(x) { return x * size; }
     function py(y) { return (1 - y) * size; }
 
+    // The true star-shaped step region centered at (cx,cy): the disk of
+    // radius r with each direction clipped to the first Neumann hit (same
+    // ray-box/circle test the walk samples with). WoSt guarantees r <=
+    // silhouette distance, so this angular sweep is exactly the star-shaped
+    // domain the next point is drawn from — a notched disk, not a plain ball.
+    function computeStar(cx, cy, r) {
+      const pts = new Array(STAR_SAMPLES);
+      for (let k = 0; k < STAR_SAMPLES; k++) {
+        const a = (k / STAR_SAMPLES) * Math.PI * 2;
+        const vx = Math.cos(a), vy = Math.sin(a);
+        const hit = S.rayHitNeumann(cx, cy, vx, vy, r, walkScene);
+        const t = Math.min(r, hit.t);
+        pts[k] = [cx + vx * t, cy + vy * t];
+      }
+      return pts;
+    }
+
+    // Precompute one star polygon per step (once, not per frame). Sub-pixel
+    // steps are stored as null and skipped when drawing.
+    function buildStars(points, radii) {
+      const stars = [];
+      if (!points || !radii) return stars;
+      const n = Math.min(radii.length, points.length - 1);
+      for (let i = 0; i < n; i++) {
+        const c = points[i], rad = radii[i];
+        stars.push(rad * size >= 1 ? computeStar(c[0], c[1], rad) : null);
+      }
+      return stars;
+    }
+
+    function traceStar(star) {
+      ctx.beginPath();
+      ctx.moveTo(px(star[0][0]), py(star[0][1]));
+      for (let k = 1; k < star.length; k++) ctx.lineTo(px(star[k][0]), py(star[k][1]));
+      ctx.closePath();
+    }
+
     function drawDomainHeatmap() {
       // Draw the FD solution as a background heatmap (used in stages 3-4
       // but kept faint in earlier stages for context).
@@ -345,24 +384,24 @@
         if (isInsideObstacle(x0, y0)) continue;
         const r = S.walk(walkScene, x0, y0, true);
         if (r.points && r.points.length > 1) {
-          walks.push({ pts: r.points, shown: 1, t0: now });
+          walks.push({ pts: r.points, stars: buildStars(r.points, r.radii), shown: 1, t0: now });
         }
         return;
       }
     }
-    function drawOneWalk(pts, upTo, alpha) {
-      // Sphere chain
+    function drawOneWalk(pts, stars, upTo, alpha) {
+      // Star-shaped step regions — true WoSt construction (notched disks).
       ctx.fillStyle = theme.accent;
       ctx.strokeStyle = theme.accent;
-      for (let s = 0; s < upTo - 1; s++) {
-        const a = pts[s], b = pts[s + 1];
-        const r = Math.hypot(b[0] - a[0], b[1] - a[1]) * size;
-        if (r < 1) continue;
+      for (let s = 0; stars && s < upTo - 1 && s < stars.length; s++) {
+        const star = stars[s];
+        if (!star) continue;
+        traceStar(star);
         ctx.globalAlpha = alpha * 0.06;
-        ctx.beginPath(); ctx.arc(px(a[0]), py(a[1]), r, 0, Math.PI * 2); ctx.fill();
+        ctx.fill();
         ctx.globalAlpha = alpha * 0.30;
         ctx.lineWidth = 0.7;
-        ctx.beginPath(); ctx.arc(px(a[0]), py(a[1]), r, 0, Math.PI * 2); ctx.stroke();
+        ctx.stroke();
       }
       // Path
       ctx.globalAlpha = alpha;
@@ -389,16 +428,16 @@
         const age = now - g.tEnd;
         const alpha = Math.max(0, 0.45 * (1 - age / GHOST_FADE_MS));
         if (alpha <= 0) { ghostWalks.splice(i, 1); continue; }
-        drawOneWalk(g.pts, g.pts.length, alpha);
+        drawOneWalk(g.pts, g.stars, g.pts.length, alpha);
       }
       // Active walks
       for (let i = walks.length - 1; i >= 0; i--) {
         const w = walks[i];
         const elapsed = now - w.t0;
         w.shown = Math.min(w.pts.length, 1 + Math.floor(elapsed / 35));
-        drawOneWalk(w.pts, w.shown, 1);
+        drawOneWalk(w.pts, w.stars, w.shown, 1);
         if (w.shown >= w.pts.length) {
-          ghostWalks.push({ pts: w.pts, tEnd: now });
+          ghostWalks.push({ pts: w.pts, stars: w.stars, tEnd: now });
           walks.splice(i, 1);
         }
       }

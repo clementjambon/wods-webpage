@@ -246,6 +246,10 @@
   function walkWoSt(scene, sx, sy, recordPath) {
     let x = sx, y = sy;
     const points = recordPath ? [[x, y]] : null;
+    // Star radius r used at each step (one entry per point transition, so
+    // radii[i] is the radius of the star region centered at points[i]).
+    // Lets the figure render the true star-shaped domain, not just a ball.
+    const radii = recordPath ? [] : null;
     const eps = (scene && scene.epsilon != null) ? scene.epsilon : C.epsilon;
     const rmin = C.rmin || eps;
     const maxSteps = C.maxSteps;
@@ -256,7 +260,7 @@
     for (let s = 0; s < maxSteps; s++) {
       const dD = distToDirichlet(x, y, scene);
       if (dD.dist < eps) {
-        return { steps: s, endX: x, endY: y, kind: 'D', value: dD.value, points };
+        return { steps: s, endX: x, endY: y, kind: 'D', value: dD.value, points, radii };
       }
 
       const dSil = silhouetteDist(x, y, scene);
@@ -292,13 +296,18 @@
         onNeumann = false;
       }
       if (points) points.push([x, y]);
+      if (radii) radii.push(r);
     }
-    return { steps: maxSteps, endX: x, endY: y, kind: 'X', value: 0, points };
+    return { steps: maxSteps, endX: x, endY: y, kind: 'X', value: 0, points, radii };
   }
 
   function walkWoS(scene, sx, sy, recordPath) {
     let x = sx, y = sy;
     const points = recordPath ? [[x, y]] : null;
+    // See walkWoSt: one radius per point transition. In WoS the step region
+    // is a full ball (no Neumann occluders within r), so the rendered star
+    // collapses to a plain circle.
+    const radii = recordPath ? [] : null;
     const eps = (scene && scene.epsilon != null) ? scene.epsilon : C.epsilon;
     const maxSteps = C.maxSteps;
 
@@ -306,12 +315,13 @@
       const info = distToSegments(x, y, scene);
 
       if (info.dist < eps && (info.kind === 'D' || info.kind === 'I')) {
-        return { steps: s, endX: x, endY: y, kind: info.kind, value: info.value, points };
+        return { steps: s, endX: x, endY: y, kind: info.kind, value: info.value, points, radii };
       }
       if (info.dist < eps && info.kind === 'N') {
         x += info.normal[0] * eps * 1.5;
         y += info.normal[1] * eps * 1.5;
         if (points) points.push([x, y]);
+        if (radii) radii.push(info.dist); // tiny nudge — negligible sphere
         continue;
       }
 
@@ -320,8 +330,9 @@
       x += dir[0] * r;
       y += dir[1] * r;
       if (points) points.push([x, y]);
+      if (radii) radii.push(r);
     }
-    return { steps: maxSteps, endX: x, endY: y, kind: 'X', value: 0, points };
+    return { steps: maxSteps, endX: x, endY: y, kind: 'X', value: 0, points, radii };
   }
 
   function walk(scene, sx, sy, recordPath) {

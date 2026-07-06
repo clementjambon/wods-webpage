@@ -15,6 +15,8 @@
   const Sc = W.WoDS.scenes;
   const C = W.WoDS.config;
 
+  const STAR_SAMPLES = 72; // angular samples per star-shaped step region
+
   function init(root) {
     const theme = W.WoDS.themeFor(root);
     const canvas = root.querySelector('canvas.diagram');
@@ -114,26 +116,63 @@
       ctx.setLineDash([]);
     }
 
+    // The true star-shaped step region centered at (cx,cy): the disk of
+    // radius r with each direction clipped to the first Neumann hit (same
+    // ray-box test the walk samples with). WoSt guarantees r <= silhouette
+    // distance, so this angular sweep is exactly the star-shaped domain the
+    // next point is drawn from — a notched disk, not a plain ball. Returns
+    // the boundary polygon in [0,1] domain coords. In WoS (or with no Neumann
+    // occluder within r) it collapses to a full circle.
+    function computeStar(cx, cy, r) {
+      const pts = new Array(STAR_SAMPLES);
+      for (let k = 0; k < STAR_SAMPLES; k++) {
+        const a = (k / STAR_SAMPLES) * Math.PI * 2;
+        const vx = Math.cos(a), vy = Math.sin(a);
+        const hit = S.rayHitNeumann(cx, cy, vx, vy, r, scene);
+        const t = Math.min(r, hit.t);
+        pts[k] = [cx + vx * t, cy + vy * t];
+      }
+      return pts;
+    }
+
+    // Precompute one star polygon per step (once, not per frame). Sub-pixel
+    // steps are stored as null and skipped when drawing.
+    function buildStars(points, radii) {
+      const stars = [];
+      if (!points || !radii) return stars;
+      const n = Math.min(radii.length, points.length - 1);
+      for (let i = 0; i < n; i++) {
+        const c = points[i], rad = radii[i];
+        stars.push(rad * W0 >= 1 ? computeStar(c[0], c[1], rad) : null);
+      }
+      return stars;
+    }
+
+    function traceStar(star) {
+      ctx.beginPath();
+      ctx.moveTo(star[0][0]*W0, (1-star[0][1])*H0);
+      for (let k = 1; k < star.length; k++) ctx.lineTo(star[k][0]*W0, (1-star[k][1])*H0);
+      ctx.closePath();
+    }
+
     function drawWalkSpheres(w, alpha) {
-      // Draw all spheres of the walk up to pointsShown as low-opacity disks
+      // Draw each step's star-shaped region up to pointsShown as low-opacity
+      // notched disks (the true WoSt construction).
       const pts = w.points;
       if (!pts || pts.length === 0) return;
       const upTo = Math.max(1, Math.min(w.pointsShown | 0, pts.length));
       ctx.save();
       ctx.fillStyle = theme.accent;
       ctx.strokeStyle = theme.accent;
-      for (let i = 0; i < upTo - 1; i++) {
-        const cur = pts[i], nxt = pts[i+1];
-        const r = Math.hypot(nxt[0]-cur[0], nxt[1]-cur[1]) * W0;
-        if (r < 1) continue;
+      const stars = w.stars;
+      for (let i = 0; stars && i < upTo - 1 && i < stars.length; i++) {
+        const star = stars[i];
+        if (!star) continue;
+        traceStar(star);
         ctx.globalAlpha = alpha * 0.06;
-        ctx.beginPath();
-        ctx.arc(cur[0]*W0, (1-cur[1])*H0, r, 0, Math.PI*2);
         ctx.fill();
         ctx.globalAlpha = alpha * 0.30;
         ctx.lineWidth = 0.7;
-        ctx.beginPath();
-        ctx.arc(cur[0]*W0, (1-cur[1])*H0, r, 0, Math.PI*2);
         ctx.stroke();
       }
       // Walk path polyline
@@ -199,7 +238,8 @@
       avgLabel.textContent = `Avg steps: ${avg.toFixed(1)} · samples: ${history.length}`;
 
       if (activeWalks.length < 2 && r.points && r.points.length > 1) {
-        activeWalks.push({ points: r.points, pointsShown: 1, t0: performance.now() });
+        activeWalks.push({ points: r.points, stars: buildStars(r.points, r.radii),
+                           pointsShown: 1, t0: performance.now() });
       }
     }
 
@@ -285,7 +325,7 @@
         w.pointsShown = step;
         if (showWalks) drawWalkSpheres(w, 1);
         if (step >= w.points.length) {
-          ghostWalks.push({ points: w.points, pointsShown: w.points.length, tEnd: t });
+          ghostWalks.push({ points: w.points, stars: w.stars, pointsShown: w.points.length, tEnd: t });
           activeWalks.splice(i, 1);
         }
       }

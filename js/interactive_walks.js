@@ -20,6 +20,7 @@
   const C = W.WoDS.config;
 
   const MAX_DRAW_STEPS = 600; // hard cap on points animated per walk
+  const STAR_SAMPLES = 72;    // angular samples per star-shaped step region
 
   // Standard easing curves for the clean-mode jump animation.
   const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
@@ -85,6 +86,36 @@
 
     function toScreen(p) { return [p[0]*W0, (1-p[1])*H0]; }
 
+    // The true star-shaped step region centered at (cx,cy): the disk of
+    // radius r, but each direction is clipped to the first Neumann hit
+    // (reusing the same ray-box test the walk samples with). Because WoSt
+    // guarantees r <= silhouette distance, no obstacle corner lies inside
+    // the disk, so this angular sweep is exactly the star-shaped domain the
+    // next point is drawn from — a notched disk, not a plain ball. Returns
+    // the boundary polygon in [0,1] domain coords, precomputed once per step.
+    function computeStar(cx, cy, r) {
+      const pts = new Array(STAR_SAMPLES);
+      for (let k = 0; k < STAR_SAMPLES; k++) {
+        const a = (k / STAR_SAMPLES) * Math.PI * 2;
+        const vx = Math.cos(a), vy = Math.sin(a);
+        const hit = S.rayHitNeumann(cx, cy, vx, vy, r, scene);
+        const t = Math.min(r, hit.t);
+        pts[k] = [cx + vx * t, cy + vy * t];
+      }
+      return pts;
+    }
+
+    function traceStar(star) {
+      const s0 = toScreen(star[0]);
+      ctx.beginPath();
+      ctx.moveTo(s0[0], s0[1]);
+      for (let k = 1; k < star.length; k++) {
+        const sk = toScreen(star[k]);
+        ctx.lineTo(sk[0], sk[1]);
+      }
+      ctx.closePath();
+    }
+
     function drawScene() {
       ctx.clearRect(0,0,W0,H0);
 
@@ -128,40 +159,30 @@
 
       ctx.save();
 
-      // Sphere overlays — the WoS/WoSt construction (kept in both modes).
-      ctx.fillStyle = theme.accent;
-      ctx.strokeStyle = theme.accent;
-      for (let i = 0; i < upTo - 1; i++) {
-        const cur = pts[i], nxt = pts[i+1];
-        const r = Math.hypot(nxt[0]-cur[0], nxt[1]-cur[1]) * W0;
-        if (r < 1) continue;
-        const cs = toScreen(cur);
-        ctx.globalAlpha = alpha * 0.07;
-        ctx.beginPath();
-        ctx.arc(cs[0], cs[1], r, 0, Math.PI*2);
-        ctx.fill();
-        ctx.globalAlpha = alpha * 0.28;
-        ctx.lineWidth = 0.7;
-        ctx.beginPath();
-        ctx.arc(cs[0], cs[1], r, 0, Math.PI*2);
-        ctx.stroke();
-      }
-      if (growing) {
-        // Leading sphere — fades in during the clean-mode hop.
-        const cur = pts[upTo - 1], nxt = pts[upTo];
-        const r = Math.hypot(nxt[0]-cur[0], nxt[1]-cur[1]) * W0;
-        if (r >= 1) {
-          const cs = toScreen(cur);
+      // Star-shaped step regions — the WoSt/WoS construction (both modes).
+      // Each is the true star-shaped domain (disk clipped by Neumann
+      // occluders), precomputed as a boundary polygon on the walk object.
+      const stars = w.stars;
+      if (stars) {
+        ctx.fillStyle = theme.accent;
+        ctx.strokeStyle = theme.accent;
+        for (let i = 0; i < upTo - 1 && i < stars.length; i++) {
+          const star = stars[i];
+          if (!star) continue;
+          traceStar(star);
+          ctx.globalAlpha = alpha * 0.07;
+          ctx.fill();
+          ctx.globalAlpha = alpha * 0.28;
+          ctx.lineWidth = 0.7;
+          ctx.stroke();
+        }
+        if (growing && upTo - 1 < stars.length && stars[upTo - 1]) {
+          // Leading star — fades in during the clean-mode hop.
+          traceStar(stars[upTo - 1]);
           ctx.globalAlpha = alpha * 0.12 * leadAlpha;
-          ctx.fillStyle = theme.accent;
-          ctx.beginPath();
-          ctx.arc(cs[0], cs[1], r, 0, Math.PI*2);
           ctx.fill();
           ctx.globalAlpha = alpha * 0.55 * leadAlpha;
-          ctx.strokeStyle = theme.accent;
           ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(cs[0], cs[1], r, 0, Math.PI*2);
           ctx.stroke();
         }
       }
@@ -250,8 +271,19 @@
       // Cap visualized path length so per-frame drawWalk cost stays bounded.
       if (r.points && r.points.length > MAX_DRAW_STEPS) {
         r.points = r.points.slice(0, MAX_DRAW_STEPS);
+        if (r.radii) r.radii = r.radii.slice(0, MAX_DRAW_STEPS);
       }
-      activeWalk = { ...r, pointsShown: 1, t0: performance.now() };
+      // Precompute each step's star-shaped region once (not per frame). Tiny
+      // steps (< ~1px, e.g. Neumann nudges) are skipped and drawn as nothing.
+      const stars = [];
+      if (r.points && r.radii) {
+        const n = Math.min(r.radii.length, r.points.length - 1);
+        for (let i = 0; i < n; i++) {
+          const c = r.points[i], rad = r.radii[i];
+          stars.push(rad * W0 >= 1 ? computeStar(c[0], c[1], rad) : null);
+        }
+      }
+      activeWalk = { ...r, stars, pointsShown: 1, t0: performance.now() };
     }
 
     function startNextWalk() {
