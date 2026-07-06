@@ -6,7 +6,22 @@
  * banded form (bandwidth = N) and factor it with a direct banded LU
  * (no pivoting — A is weakly diagonally dominant).
  *
- * Cell tags: 'F' free, 'D' Dirichlet (fixed value), 'N' Neumann
+ * The matrix A depends ONLY on the tag layout (which cells are
+ * Dirichlet/Neumann/free) — painting boundary values or applying a
+ * preset changes just the right-hand side. So factorizations are
+ * cached keyed on the exact tag bytes: the first solve for a tag
+ * layout pays the full LU (O(N⁴) — tens to hundreds of ms), every
+ * later solve is a banded substitution (O(N³) — a millisecond). The
+ * preset thumbnails share the main grid's tags, so a whole figure
+ * needs exactly one factorization per scene. WebKit in particular is
+ * ~10x slower than Blink on the LU inner loop, which made the old
+ * factor-per-call behavior unusable for painting in Safari.
+ *
+ * warmFactor(g, rows) lets figures precompute the LU in bounded slices
+ * (from their deferred-work queues) so the one-time cost never lands
+ * as a single long task either.
+ *
+ * Cell tags: 0=F free, 1=D Dirichlet (fixed value), 2=N Neumann
  * (zero-flux, implemented as mirror-the-inward-neighbour identity).
  */
 (function (W) {
@@ -19,75 +34,122 @@
   }
   const F = 0, D = 1, N_ = 2;
 
-  // `iters` accepted for backwards compatibility with the old Jacobi
-  // signature but ignored — this is a direct solve.
-  function solve(g, _iters) {
-    const N = g.N, n = N*N, b = N, Wb = 2*b + 1;
-    const u = g.u, tag = g.tag;
-    const ab = new Float64Array(n * Wb); // ab[i*Wb + (j-i+b)] = A[i][j]
-    const rhs = new Float64Array(n);
+  // ---- factorization cache -----------------------------------------
+  const CACHE_MAX = 3; // LU is ~3-8MB per entry; typical pages use 1-2
+  const cache = [];    // [{N, tags(copy), ab(factored)}], most recent first
+  let pending = null;  // in-progress chunked factorization
 
-    // Assemble the banded matrix and RHS with the same per-cell rules
-    // the old Jacobi solver implemented at its fixed point:
-    //   D : u_k = value
-    //   N : boundary band → u_k - u_inward = 0
-    //       interior      → c·u_k - Σ u_{non-N neighbours} = 0
-    //   F : interior → 4·u_k - Σ u_{neighbour} = 0
-    //       boundary → c·u_k - Σ u_{neighbour} = 0
-    // Dirichlet neighbour values are eliminated to the RHS.
+  function tagsEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  }
+
+  function findCached(g) {
+    for (let c = 0; c < cache.length; c++) {
+      const e = cache[c];
+      if (e.N === g.N && tagsEqual(e.tags, g.tag)) {
+        if (c > 0) { cache.splice(c, 1); cache.unshift(e); }
+        return e;
+      }
+    }
+    return null;
+  }
+
+  // Assemble the banded matrix for g's tags. Same per-cell rules the
+  // original Jacobi solver implemented at its fixed point:
+  //   D : u_k = value
+  //   N : boundary band → u_k - u_inward = 0
+  //       interior      → c·u_k - Σ u_{non-N neighbours} = 0
+  //   F : interior → 4·u_k - Σ u_{neighbour} = 0
+  //       boundary → c·u_k - Σ u_{neighbour} = 0
+  // Dirichlet neighbour values are eliminated to the RHS (see
+  // assembleRhs, which must mirror this classification exactly).
+  function assembleMatrix(g) {
+    const N = g.N, n = N*N, b = N, Wb = 2*b + 1;
+    const tag = g.tag;
+    const ab = new Float64Array(n * Wb); // ab[i*Wb + (j-i+b)] = A[i][j]
     for (let k = 0; k < n; k++) {
       const i = k % N, jj = (k - i) / N;
       const row = k * Wb;
-      if (tag[k] === D) { ab[row + b] = 1; rhs[k] = u[k]; continue; }
+      if (tag[k] === D) { ab[row + b] = 1; continue; }
 
-      const nbrs = [];
-      if (i > 0)   nbrs.push(k - 1);
-      if (i < N-1) nbrs.push(k + 1);
-      if (jj > 0)  nbrs.push(k - N);
-      if (jj < N-1)nbrs.push(k + N);
+      const hasL = i > 0, hasR = i < N-1, hasB = jj > 0, hasT = jj < N-1;
 
       if (tag[k] === N_) {
-        const onBnd = (i === 0 || i === N-1 || jj === 0 || jj === N-1);
+        const onBnd = !(hasL && hasR && hasB && hasT);
         if (onBnd) {
           let nb;
-          if      (jj === 0)   nb = k + N;
-          else if (jj === N-1) nb = k - N;
-          else if (i === 0)    nb = k + 1;
-          else                 nb = k - 1;
+          if      (!hasB) nb = k + N;
+          else if (!hasT) nb = k - N;
+          else if (!hasL) nb = k + 1;
+          else            nb = k - 1;
           ab[row + b] = 1;
           ab[row + (nb - k + b)] = -1;
         } else {
-          let nonN = 0, bk = 0;
-          const off = [];
-          for (const kk of nbrs) {
-            if (tag[kk] === N_) continue;
-            nonN++;
-            if (tag[kk] === D) bk += u[kk];
-            else off.push(kk);
-          }
-          if (nonN === 0) { ab[row + b] = 1; rhs[k] = u[k]; }
-          else {
+          let nonN = 0;
+          if (tag[k-1] !== N_) { nonN++; if (tag[k-1] !== D) ab[row + (-1 + b)] = -1; }
+          if (tag[k+1] !== N_) { nonN++; if (tag[k+1] !== D) ab[row + ( 1 + b)] = -1; }
+          if (tag[k-N] !== N_) { nonN++; if (tag[k-N] !== D) ab[row + (-N + b)] = -1; }
+          if (tag[k+N] !== N_) { nonN++; if (tag[k+N] !== D) ab[row + ( N + b)] = -1; }
+          if (nonN === 0) {
+            // isolated inside Neumann geometry: keep current value
+            for (let o = 0; o < Wb; o++) ab[row + o] = 0;
+            ab[row + b] = 1;
+          } else {
             ab[row + b] = nonN;
-            for (const kk of off) ab[row + (kk - k + b)] = -1;
-            rhs[k] = bk;
           }
         }
         continue;
       }
 
       // Free cell
-      const interior = (i > 0 && i < N-1 && jj > 0 && jj < N-1);
-      ab[row + b] = interior ? 4 : nbrs.length;
-      let bk = 0;
-      for (const kk of nbrs) {
-        if (tag[kk] === D) bk += u[kk];
-        else ab[row + (kk - k + b)] = -1;
+      let deg = 0;
+      if (hasL) { deg++; if (tag[k-1] !== D) ab[row + (-1 + b)] = -1; }
+      if (hasR) { deg++; if (tag[k+1] !== D) ab[row + ( 1 + b)] = -1; }
+      if (hasB) { deg++; if (tag[k-N] !== D) ab[row + (-N + b)] = -1; }
+      if (hasT) { deg++; if (tag[k+N] !== D) ab[row + ( N + b)] = -1; }
+      const interior = hasL && hasR && hasB && hasT;
+      ab[row + b] = interior ? 4 : deg;
+    }
+    return ab;
+  }
+
+  // Right-hand side for g's current values under the same rules.
+  function assembleRhs(g, rhs) {
+    const N = g.N, n = N*N;
+    const u = g.u, tag = g.tag;
+    for (let k = 0; k < n; k++) {
+      const i = k % N, jj = (k - i) / N;
+      if (tag[k] === D) { rhs[k] = u[k]; continue; }
+      const hasL = i > 0, hasR = i < N-1, hasB = jj > 0, hasT = jj < N-1;
+
+      if (tag[k] === N_) {
+        const onBnd = !(hasL && hasR && hasB && hasT);
+        if (onBnd) { rhs[k] = 0; continue; }
+        let nonN = 0, bk = 0;
+        if (tag[k-1] !== N_) { nonN++; if (tag[k-1] === D) bk += u[k-1]; }
+        if (tag[k+1] !== N_) { nonN++; if (tag[k+1] === D) bk += u[k+1]; }
+        if (tag[k-N] !== N_) { nonN++; if (tag[k-N] === D) bk += u[k-N]; }
+        if (tag[k+N] !== N_) { nonN++; if (tag[k+N] === D) bk += u[k+N]; }
+        rhs[k] = nonN === 0 ? u[k] : bk;
+        continue;
       }
+
+      let bk = 0;
+      if (hasL && tag[k-1] === D) bk += u[k-1];
+      if (hasR && tag[k+1] === D) bk += u[k+1];
+      if (hasB && tag[k-N] === D) bk += u[k-N];
+      if (hasT && tag[k+N] === D) bk += u[k+N];
       rhs[k] = bk;
     }
+  }
 
-    // Banded LU in place. L (unit diag) stored below diag, U on/above.
-    for (let k = 0; k < n; k++) {
+  // Banded LU elimination of rows k0..k0+rows-1 (in place, resumable).
+  // L (unit diag) stored below the diagonal, U on/above.
+  function eliminateRows(ab, n, b, Wb, k0, rows) {
+    const kEnd = Math.min(n, k0 + rows);
+    for (let k = k0; k < kEnd; k++) {
       const akk = ab[k*Wb + b];
       const iMax = Math.min(n - 1, k + b);
       const kRowOff = k*Wb - k + b; // ab[kRowOff + j] = A[k][j]
@@ -102,6 +164,63 @@
         }
       }
     }
+    return kEnd;
+  }
+
+  function insertCache(entry) {
+    cache.unshift(entry);
+    if (cache.length > CACHE_MAX) cache.pop();
+  }
+
+  // Advance (or start) the factorization for g's current tags by
+  // `rows` elimination rows. Returns true once a factorization is
+  // ready — after that, solve(g) is a cheap substitution. Figures call
+  // this from their deferred-work queues so the one-time LU cost never
+  // blocks a frame for long, even in slower engines.
+  function warmFactor(g, rows) {
+    if (findCached(g)) { pendingDropIfStale(g); return true; }
+    if (!pending || pending.N !== g.N || !tagsEqual(pending.tags, g.tag)) {
+      pending = {
+        N: g.N,
+        tags: g.tag.slice(),
+        ab: assembleMatrix(g),
+        k: 0,
+      };
+    }
+    const N = pending.N, n = N*N, b = N, Wb = 2*b + 1;
+    pending.k = eliminateRows(pending.ab, n, b, Wb, pending.k, rows || n);
+    if (pending.k >= n) {
+      insertCache({ N: pending.N, tags: pending.tags, ab: pending.ab });
+      pending = null;
+      return true;
+    }
+    return false;
+  }
+
+  function pendingDropIfStale(g) {
+    // A cached factorization appeared for the tags we were warming
+    // (e.g. a sync solve finished first) — drop the duplicate work.
+    if (pending && pending.N === g.N && tagsEqual(pending.tags, g.tag)) pending = null;
+  }
+
+  // Reused RHS scratch, per grid size.
+  const scratch = {};
+  function rhsFor(n) {
+    return scratch[n] || (scratch[n] = new Float64Array(n));
+  }
+
+  // `iters` accepted for backwards compatibility with the old Jacobi
+  // signature but ignored — this is a direct (exact) solve.
+  function solve(g, _iters) {
+    let e = findCached(g);
+    if (!e) {
+      warmFactor(g, g.N * g.N); // factor to completion synchronously
+      e = findCached(g);
+    }
+    const N = g.N, n = N*N, b = N, Wb = 2*b + 1;
+    const ab = e.ab;
+    const rhs = rhsFor(n);
+    assembleRhs(g, rhs);
 
     // Forward solve L y = rhs
     for (let i = 0; i < n; i++) {
@@ -122,5 +241,5 @@
     for (let k = 0; k < n; k++) g.u[k] = rhs[k];
   }
 
-  W.WoDS.laplace = { makeGrid, solve, F, D, N: N_ };
+  W.WoDS.laplace = { makeGrid, solve, warmFactor, F, D, N: N_ };
 })(window);

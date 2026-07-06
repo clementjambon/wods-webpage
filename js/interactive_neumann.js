@@ -217,29 +217,30 @@
       flushIO.observe(root);
     }
 
-    // Relax in chunks: a quick first pass gives an immediately
-    // presentable field, the rest refines over deferred ticks. A newer
-    // call (preset/scene click) supersedes any queued refinement.
-    let relaxGen = 0;
-    function relaxChunked(total) {
-      const gen = ++relaxGen;
-      relax(150);
-      render();
-      let left = total - 150;
-      function refine() {
-        if (gen !== relaxGen) return;
-        relax(Math.min(200, left));
-        left -= 200;
-        render();
-        if (left > 0) defer(refine, true);
-      }
-      if (left > 0) defer(refine, true);
+    // Solve once the LU factorization for the current tag layout is
+    // ready. laplace.js caches one factorization per tag layout;
+    // warming it in 600-row slices keeps each deferred job bounded
+    // (~40ms even in WebKit, whose LU inner loop is ~10x slower than
+    // Blink's). While warming, the previous field stays on screen; the
+    // flush-on-entry below guarantees completion before the figure is
+    // actually looked at. Once warm — the common case, since painting
+    // and boundary presets don't change tags — the solve inside is a
+    // synchronous ~1ms substitution.
+    let solveGen = 0;
+    function solveWhenReady() {
+      const gen = ++solveGen;
+      (function step() {
+        if (gen !== solveGen) return;
+        if (L.warmFactor(grid, 600)) { relax(); render(); }
+        else defer(step, true);
+      })();
     }
 
     function applyPreset(fn) {
       grid.u.fill(0);
       retagCells(fn);
-      relaxChunked(700);
+      render(); // show the new boundary data immediately
+      solveWhenReady();
     }
 
     function resetBoundary() { applyPreset(presetValue); }
@@ -472,9 +473,11 @@
         if (idx === sceneIdx) return;
         sceneIdx = idx;
         updateSceneHighlight();
-        // Re-tag (without wiping painted boundary values), then relax.
+        // Re-tag (without wiping painted boundary values), then solve
+        // once the new scene's factorization is warm.
         retagCells(null);
-        relaxChunked(700);
+        render();
+        solveWhenReady();
       });
       scenePresetsDiv.appendChild(b);
       sceneButtons.push(b);
