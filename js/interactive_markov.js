@@ -376,9 +376,10 @@
           ctx.fill();
         }
 
-        // Border
+        // Border — interface color, foreshadowing that these transient
+        // states become the interfaces the method solves for later.
         ctx.lineWidth = 1.2;
-        ctx.strokeStyle = theme.text;
+        ctx.strokeStyle = theme.interface;
         ctx.beginPath();
         ctx.arc(x, y, NODE_R, 0, 2 * Math.PI);
         ctx.stroke();

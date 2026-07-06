@@ -28,13 +28,17 @@
   function init(root) {
     const theme = W.WoDS.themeFor(root);
     const canvas = root.querySelector('canvas.diagram');
-    const tileSlider = root.querySelector('input[data-role="tiles"]');
-    const tileLabel = root.querySelector('[data-role="tiles-label"]');
-    const speedSlider = root.querySelector('input[data-role="speed"]');
-    const speedLabel = root.querySelector('[data-role="speed-label"]');
-    const newBtn = root.querySelector('[data-role="new"]');
-    const playBtn = root.querySelector('[data-role="play"]');
-    const releaseBtn = root.querySelector('[data-role="release"]');
+    // The sliders/buttons are studio-only; on the public page the figure just
+    // auto-loops (n=6, 1× speed) with the canvas still click-to-launch. All
+    // control refs are null-guarded below, so gating them to null is enough.
+    const STUDIO = W.WoDS.inStudio;
+    const tileSlider = STUDIO ? root.querySelector('input[data-role="tiles"]') : null;
+    const tileLabel = STUDIO ? root.querySelector('[data-role="tiles-label"]') : null;
+    const speedSlider = STUDIO ? root.querySelector('input[data-role="speed"]') : null;
+    const speedLabel = STUDIO ? root.querySelector('[data-role="speed-label"]') : null;
+    const newBtn = STUDIO ? root.querySelector('[data-role="new"]') : null;
+    const playBtn = STUDIO ? root.querySelector('[data-role="play"]') : null;
+    const releaseBtn = STUDIO ? root.querySelector('[data-role="release"]') : null;
 
     const W0 = 400, H0 = 400, PAD = 44, SQ = W0 - 2 * PAD;
     const ctx = U.fitCanvas(canvas, W0, H0);

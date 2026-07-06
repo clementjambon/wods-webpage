@@ -33,7 +33,9 @@
     stage.innerHTML = '';
 
     const ringAbsorbing = theme.dirichlet;
-    const ringTransient = theme.text;
+    // Transient states ringed in the interface color: they foreshadow the
+    // interfaces the method solves for later.
+    const ringTransient = theme.interface;
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', `0 0 ${VBW} ${VBH}`);

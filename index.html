@@ -174,11 +174,6 @@
               <div class="presets" data-role="scene-presets"></div>
               <label style="margin-top:14px;">Boundary presets</label>
               <div class="presets" data-role="presets"></div>
-              <div class="legend" style="margin-top:10px;">
-                <span><i style="background:var(--color-dirichlet)"></i> Dirichlet (paint here)</span>
-                <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann
-                  (zero-flux)</span>
-              </div>
               <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click and paint the
                 Dirichlet band as before. The interior obstacle (dashed, grey) enforces $\partial u/\partial n = 0$ —
                 isolines bend to meet it at right angles.</p>
@@ -330,10 +325,12 @@
           <div class="canvas-row">
             <div class="canvas-col"><canvas class="diagram"></canvas></div>
             <div class="controls">
-              <label>Solver</label>
-              <div class="solver-toggle" data-role="solver-toggle">
-                <label><input type="radio" name="i1-solver" value="wost" checked><span>WoSt</span></label>
-                <label><input type="radio" name="i1-solver" value="wos"><span>WoS</span></label>
+              <div class="studio-only">
+                <label>Solver</label>
+                <div class="solver-toggle" data-role="solver-toggle">
+                  <label><input type="radio" name="i1-solver" value="wost" checked><span>WoSt</span></label>
+                  <label><input type="radio" name="i1-solver" value="wos"><span>WoS</span></label>
+                </div>
               </div>
               <label style="margin-top:14px;">Neumann obstacles: <span data-role="obstacles-label">10</span></label>
               <input type="range" data-role="obstacles" min="0" max="12" step="1" value="10" />
@@ -430,10 +427,12 @@
           <div class="canvas-row">
             <div class="canvas-col"><canvas class="diagram"></canvas></div>
             <div class="controls">
-              <label>Solver</label>
-              <div class="solver-toggle" data-role="solver-toggle">
-                <label><input type="radio" name="i2-solver" value="wost" checked><span>WoSt</span></label>
-                <label><input type="radio" name="i2-solver" value="wos"><span>WoS</span></label>
+              <div class="studio-only">
+                <label>Solver</label>
+                <div class="solver-toggle" data-role="solver-toggle">
+                  <label><input type="radio" name="i2-solver" value="wost" checked><span>WoSt</span></label>
+                  <label><input type="radio" name="i2-solver" value="wos"><span>WoS</span></label>
+                </div>
               </div>
               <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">1×1</span></label>
               <input type="range" data-role="tiles" min="1" max="12" step="1" value="6" />
@@ -518,10 +517,12 @@
           <div class="canvas-row">
             <div class="canvas-col"><canvas class="diagram"></canvas></div>
             <div class="controls">
-              <label>Solver</label>
-              <div class="solver-toggle" data-role="solver-toggle">
-                <label><input type="radio" name="i3-solver" value="wost" checked><span>WoSt</span></label>
-                <label><input type="radio" name="i3-solver" value="wos"><span>WoS</span></label>
+              <div class="studio-only">
+                <label>Solver</label>
+                <div class="solver-toggle" data-role="solver-toggle">
+                  <label><input type="radio" name="i3-solver" value="wost" checked><span>WoSt</span></label>
+                  <label><input type="radio" name="i3-solver" value="wos"><span>WoS</span></label>
+                </div>
               </div>
               <label style="margin-top:14px;">Scene</label>
               <div class="presets" data-role="shape-presets"></div>
@@ -555,10 +556,12 @@
           <div class="canvas-row">
             <div class="canvas-col"><canvas class="diagram"></canvas></div>
             <div class="controls">
-              <label>Solver</label>
-              <div class="solver-toggle" data-role="solver-toggle">
-                <label><input type="radio" name="i3b-solver" value="wost" checked><span>WoSt</span></label>
-                <label><input type="radio" name="i3b-solver" value="wos"><span>WoS</span></label>
+              <div class="studio-only">
+                <label>Solver</label>
+                <div class="solver-toggle" data-role="solver-toggle">
+                  <label><input type="radio" name="i3b-solver" value="wost" checked><span>WoSt</span></label>
+                  <label><input type="radio" name="i3b-solver" value="wos"><span>WoS</span></label>
+                </div>
               </div>
               <label style="margin-top:14px;">Scene</label>
               <div class="presets" data-role="scene-presets"></div>
@@ -1035,8 +1038,9 @@
       The last problem is that, so far, we've only seen
       in <a class="ref" data-ref="poisson-kernel"></a> how to jump from the
       inside of a subdomain to one of its interfaces and not from one interface to another.
-      The fix is to view each interface through <i>another decomposition<fn>This time it is an overlapping
-          decomposition.</fn></i> of the domain, one where the
+      The fix is to view each interface through <i>another decomposition</i>
+      <fn>This time it is an overlapping
+        decomposition.</fn> of the domain, one where the
       interface sits in the interior of a subdomain. On a grid, that subdomain is just the two cells sharing the
       edge, and its boundary is the neighboring interfaces. We call these <i>“co-edge” subdomains</i>.
     </p>
@@ -1044,9 +1048,10 @@
     <figure class="figure" id="coedge-fig">
       <div class="figure-body">
         <div class="canvas-wrap">
-          <div class="canvas-row">
+          <div class="canvas-row" style="justify-content:center;">
             <div class="canvas-col"><canvas class="diagram"></canvas></div>
-            <div class="controls">
+            <!-- Studio: full controls (sliders, buttons, full legend, hint). -->
+            <div class="controls studio-only">
               <label>Tiling resolution: <span data-role="tiles-label">6×6</span></label>
               <input type="range" data-role="tiles" min="2" max="10" step="1" value="6" />
               <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1×</span></label>
@@ -1058,7 +1063,9 @@
               </div>
               <div class="legend" style="margin-top:10px;">
                 <span><i style="background:var(--color-interface)"></i> Tile interfaces</span>
-                <span><i style="background:rgba(42,95,184,0.35)"></i> Current co-edge subdomain</span>
+                <span><i
+                    style="width:12px; height:12px; background:rgba(42,95,184,0.14); border:2px solid var(--color-accent); border-radius:1px;"></i>
+                  Current co-edge subdomain</span>
                 <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann
                   obstacles</span>
               </div>
@@ -1071,10 +1078,18 @@
                 walks from that spot; <b>Release</b> resumes random starts.</p>
             </div>
           </div>
+          <!-- Public page: just the co-edge subdomain legend, centered below. -->
+          <div class="controls blog-only" style="margin-top:14px;">
+            <div class="legend" style="align-items:center;">
+              <span><i
+                  style="width:12px; height:12px; background:rgba(42,95,184,0.14); border:2px solid var(--color-accent); border-radius:1px;"></i>
+                Current co-edge subdomain</span>
+            </div>
+          </div>
         </div>
-        <div class="figure-caption"><b>Walk on Co-edge Subdomains.</b> Starting from a point $x$ on an interface, the
-          walk advances by first-passage inside the co-edge subdomain straddling its current interface — the union of
-          the two adjacent tiles. Each exit lands on a new interface, re-centering the subdomain, until the walk is
+        <div class="figure-caption"><b>Walk on Co-edge Subdomains.</b> From a point $x$ on an interface, we take a
+          step by walking on its <i>co-edge subdomain</i> — the union of the two tiles that share that interface.
+          Each exit lands on a new interface, with a new subdomain for the next step, until the walk is
           absorbed on the global Dirichlet boundary at $Z_\tau$.</div>
       </div>
     </figure>
