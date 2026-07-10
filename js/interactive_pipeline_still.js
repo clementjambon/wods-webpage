@@ -167,9 +167,7 @@
     function solveIfNeeded() {
       const key = [T, B, nObst, presetIdx].join('|');
       if (cached.key === key) return;
-      // Floor well above the display resolution so the obstacle mask the
-      // supersampler probes is finer than the cells it is filling.
-      const Nfd = Math.max(96, T * B);
+      const Nfd = Math.max(64, T * B);
       const g = L.makeGrid(Nfd);
       const fn = PRESETS[presetIdx].fn;
       for (let j = 0; j < Nfd; j++) {
@@ -192,9 +190,10 @@
       cached = { key, grid: g, N: Nfd };
     }
     // Cells inside an obstacle are tagged Neumann and hold u = 0, which the
-    // diverging colormap paints as its cream midpoint. Reading one by accident
-    // (a probe just outside a rectangle can still quantize into it) would ring
-    // every obstacle in pale seams, so sampling refuses those cells outright.
+    // diverging colormap paints as its cream midpoint. A point that is outside
+    // an obstacle geometrically can still quantize into one of those cells, so
+    // reading the grid naively rings every obstacle in pale seams. sampleU
+    // refuses them; sampleNear walks out to the closest free cell instead.
     function sampleU(x, y) {
       const g = cached.grid, Nfd = cached.N;
       const i = Math.min(Nfd - 1, Math.max(0, Math.floor(x * Nfd)));
@@ -203,8 +202,10 @@
       return g.tag[k] === L.N ? null : g.u[k];
     }
 
-    // Nearest free value, for points that must be colored (collocation dots
-    // sitting a hair inside an obstacle's quantized footprint).
+    // Nearest free value. Extending the field outward like this — rather than
+    // raising the FD resolution until the mask lines up — keeps the solve at
+    // O(N⁴) for the N the figure displays. It is off by O(h·∇u) within one grid
+    // cell of an obstacle, and nothing but the pixels next to it ever reads it.
     function sampleNear(x, y) {
       const v = sampleU(x, y);
       if (v !== null) return v;
@@ -468,9 +469,7 @@
           const x = (i + (a + 0.5) / SUPERSAMPLE) / N;
           const y = (j + (b + 0.5) / SUPERSAMPLE) / N;
           if (isInsideObstacle(x, y)) continue;
-          const v = sampleU(x, y);
-          if (v === null) continue;
-          sum += v;
+          sum += sampleNear(x, y);
           free++;
         }
       }

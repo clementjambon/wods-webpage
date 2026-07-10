@@ -19,8 +19,10 @@
   const U = W.WoDS.util;
   const L = W.WoDS.laplace;
   const S = W.WoDS.solver;
+  const Sc = W.WoDS.scenes;
 
   const STAR_SAMPLES = 72; // angular samples per star-shaped step region
+  const SUPERSAMPLE = 4;   // probes per axis when coloring a reconstruction cell
 
   function init(root) {
     const theme = W.WoDS.themeFor(root);
@@ -91,7 +93,20 @@
         make: () => ({ circles: [], rects: [] })
       },
     ];
+    // The #coedge-fig geometry — a dozen scattered reflecting rectangles. It's
+    // the most convincing stage-2 backdrop, but too busy for the prose figure,
+    // so it's offered in the studio only (where the stage stills are authored).
+    if (W.WoDS.inStudio) {
+      scenes.push({
+        name: 'Scattered obstacles',
+        make: () => ({ circles: [], rects: Sc.layout(12).rects })
+      });
+    }
     let sceneIdx = 0;
+    // make() re-derives the geometry every call (and Sc.layout rejection-samples
+    // to do it), while isInsideObstacle runs per probe — thousands of times a
+    // frame. Hold the current scene's geometry instead of rebuilding it.
+    let sceneGeom = scenes[sceneIdx].make();
     let stage = parseInt(stageSlider.value);
     let T = parseInt(tilesSlider.value);
     let B = parseInt(subSlider.value);
@@ -167,7 +182,7 @@
 
     // ---- Geometry helpers ----------------------------------------
     function isInsideObstacle(x, y) {
-      const sc = scenes[sceneIdx].make();
+      const sc = sceneGeom;
       for (const c of sc.circles) if (Math.hypot(x - c.cx, y - c.cy) < c.r) return true;
       for (const r of sc.rects) if (x > r.x0 && x < r.x1 && y > r.y0 && y < r.y1) return true;
       return false;
@@ -208,12 +223,39 @@
       return g;
     }
 
+    // Cells inside an obstacle are tagged Neumann and hold u = 0, which the
+    // diverging colormap paints as its cream midpoint. A point that is outside
+    // an obstacle geometrically can still quantize into one of those cells, so
+    // reading the grid naively rings every obstacle in pale seams. sampleU
+    // refuses them; sampleNear walks out to the closest free cell instead.
+    //
+    // Extending the field outward like this — rather than raising the FD
+    // resolution until the mask lines up — keeps the solve at O(N⁴) for the
+    // N the figure actually displays. The value is off by O(h·∇u) within one
+    // grid cell of an obstacle, and nothing else reads it.
     function sampleU(x, y) {
       const g = cached.grid;
       const Nfd = cached.N;
       const i = Math.min(Nfd - 1, Math.max(0, Math.floor(x * Nfd)));
       const j = Math.min(Nfd - 1, Math.max(0, Math.floor(y * Nfd)));
-      return g.u[j * Nfd + i];
+      const k = j * Nfd + i;
+      return g.tag[k] === L.N ? null : g.u[k];
+    }
+
+    function sampleNear(x, y) {
+      const v = sampleU(x, y);
+      if (v !== null) return v;
+      const h = 1 / cached.N;
+      for (let ring = 1; ring <= 3; ring++) {
+        for (let dy = -ring; dy <= ring; dy++) {
+          for (let dx = -ring; dx <= ring; dx++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== ring) continue;
+            const w = sampleU(x + dx * h, y + dy * h);
+            if (w !== null) return w;
+          }
+        }
+      }
+      return 0;
     }
 
     // ---- Drawing primitives --------------------------------------
@@ -275,21 +317,38 @@
       }
     }
 
-    function drawObstacles() {
-      const sc = scenes[sceneIdx].make();
+    // `backing` (0..1) lays the surface color down first, so the obstacles read
+    // as solid over the stage-4 heatmap rather than letting the reconstructed
+    // field tint them through the translucent Neumann fill. It tracks
+    // pixelReveal so the two fade in together.
+    function drawObstacles(backing) {
+      const sc = sceneGeom;
       ctx.save();
-      ctx.fillStyle = theme.neumannFill;
       ctx.strokeStyle = theme.neumann;
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 4]);
       for (const c of sc.circles) {
         ctx.beginPath();
         ctx.arc(px(c.cx), py(c.cy), c.r * size, 0, Math.PI * 2);
+        if (backing) {
+          ctx.globalAlpha = backing;
+          ctx.fillStyle = theme.surface;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+        ctx.fillStyle = theme.neumannFill;
         ctx.fill(); ctx.stroke();
       }
       for (const r of sc.rects) {
         const x = px(r.x0), y = py(r.y1);
         const w = (r.x1 - r.x0) * size, h = (r.y1 - r.y0) * size;
+        if (backing) {
+          ctx.globalAlpha = backing;
+          ctx.fillStyle = theme.surface;
+          ctx.fillRect(x, y, w, h);
+          ctx.globalAlpha = 1;
+        }
+        ctx.fillStyle = theme.neumannFill;
         ctx.fillRect(x, y, w, h);
         ctx.strokeRect(x, y, w, h);
       }
@@ -349,7 +408,7 @@
       return { x0: tc / T, y0: tr / T, x1: (tc + 1) / T, y1: (tr + 1) / T };
     }
     function buildWalkScene() {
-      const sc = scenes[sceneIdx].make();
+      const sc = sceneGeom;
       const rects = sc.rects.map(r => ({ ...r, kind: 'N' }));
       const circles = sc.circles.map(c => ({ ...c, kind: 'N' }));
       // Outer Dirichlet square + per-tile-row/column interfaces
@@ -470,7 +529,7 @@
         const x = i / T;
         for (let k = 0; k < N; k++) {
           const y = (k + 0.5) / N;
-          const v = sampleU(x, y);
+          const v = sampleNear(x, y);
           drawCollocationDot(x, y, v, dotR);
         }
       }
@@ -479,11 +538,36 @@
         const y = i / T;
         for (let k = 0; k < N; k++) {
           const x = (k + 0.5) / N;
-          const v = sampleU(x, y);
+          const v = sampleNear(x, y);
           drawCollocationDot(x, y, v, dotR);
         }
       }
       ctx.restore();
+    }
+
+    // Value of one reconstruction cell: the mean solution over the part of the
+    // cell that actually lies in Ω, estimated with SUPERSAMPLE² probes.
+    //
+    // Testing the cell *center* instead (the obvious thing) drops the whole
+    // cell whenever the center happens to fall in an obstacle, so a thin
+    // rectangle punches a staircase of white holes far wider than itself, and
+    // the obstacle is then drawn inside that hole, ringed by white. Here a cell
+    // straddling an obstacle edge still gets the average of its free probes, so
+    // the field runs up to the obstacle to within 1/(N·SUPERSAMPLE). Cells with
+    // no free probe are left unpainted — they sit under the obstacle, which is
+    // drawn over them with an opaque backing.
+    function cellValue(i, j, N) {
+      let sum = 0, free = 0;
+      for (let b = 0; b < SUPERSAMPLE; b++) {
+        for (let a = 0; a < SUPERSAMPLE; a++) {
+          const x = (i + (a + 0.5) / SUPERSAMPLE) / N;
+          const y = (j + (b + 0.5) / SUPERSAMPLE) / N;
+          if (isInsideObstacle(x, y)) continue;
+          sum += sampleNear(x, y);
+          free++;
+        }
+      }
+      return free ? sum / free : null;
     }
 
     function drawInteriorPixels() {
@@ -496,10 +580,8 @@
       const cell = size / N;
       for (let j = 0; j < N; j++) {
         for (let i = 0; i < N; i++) {
-          const x = (i + 0.5) / N;
-          const y = (j + 0.5) / N;
-          if (isInsideObstacle(x, y)) continue;
-          const v = sampleU(x, y);
+          const v = cellValue(i, j, N);
+          if (v === null) continue;
           const t = (Math.max(-1, Math.min(1, v)) + 1) * 0.5;
           ctx.fillStyle = U.colormap(t, theme);
           ctx.fillRect(i * cell, (N - 1 - j) * cell, cell + 0.6, cell + 0.6);
@@ -520,13 +602,14 @@
       // still fading out after dropping below the stage threshold).
       if (stage >= 3 || colloReveal > 0.001 || pixelReveal > 0.001) solveIfNeeded();
 
-      // Stage 0: outer boundary + obstacles always
-      drawObstacles();
-
-      // Stage 4: pixels go *under* the interfaces and obstacle outline.
-      if (pixelReveal > 0.001) drawInteriorPixels();
-      // Re-stroke obstacle outlines on top of pixels so they remain visible.
-      if (pixelReveal > 0.001) drawObstacles();
+      // Stage 4: pixels go *under* the interfaces and obstacle outline, and the
+      // obstacles are re-drawn over them with a backing that fades in alongside.
+      if (pixelReveal > 0.001) {
+        drawInteriorPixels();
+        drawObstacles(easeOut(pixelReveal));
+      } else {
+        drawObstacles(0);
+      }
 
       if (ifaceReveal > 0.001) drawTileInterfaces();
       if (stage === 2) drawWalks(now || performance.now());
@@ -617,6 +700,7 @@
       b.addEventListener('click', () => {
         if (idx === sceneIdx) return;
         sceneIdx = idx;
+        sceneGeom = scenes[idx].make();
         updateSceneHighlight();
         rebuildWalkScene();
         walks = []; ghostWalks = [];
