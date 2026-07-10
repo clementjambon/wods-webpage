@@ -18,6 +18,10 @@
  * which loads and runs that ONE animation (the others are removed), so
  * recording isn't slowed by 14 rAF loops competing at once. The link
  * carries over the current query (?record=1, &scale=…) automatically.
+ *
+ * Figures that exist ONLY in the studio (authoring tools with no place
+ * on the public page) live in tools/studio-extras.html and are appended
+ * after the index.html ones; their scripts are listed in EXTRA_SCRIPTS.
  * ============================================================== */
 'use strict';
 const fs = require('fs');
@@ -26,33 +30,55 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const src = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
+// Scripts backing the studio-only figures, injected after index.html's.
+const EXTRA_SCRIPTS = [
+  'js/svg_recorder.js',
+  'js/interactive_pipeline_still.js',
+];
+
 // <head> contents, verbatim (fonts, theme/style css, KaTeX — control
 // hints contain $...$ that KaTeX renders).
 const head = src.match(/<head>([\s\S]*?)<\/head>/i)[1];
 
 // js/ script includes, in order (config, util, solvers, figures, capture).
-const scripts = (src.match(/<script src="js\/[^"]+"><\/script>/g) || []).join('\n  ');
+// The studio-only scripts go just before capture.js, keeping it last.
+const scriptTags = src.match(/<script src="js\/[^"]+"><\/script>/g) || [];
+const captureAt = scriptTags.findIndex((s) => s.includes('js/capture.js'));
+scriptTags.splice(
+  captureAt === -1 ? scriptTags.length : captureAt,
+  0,
+  ...EXTRA_SCRIPTS.map((s) => `<script src="${s}"></script>`)
+);
+const scripts = scriptTags.join('\n  ');
+
+function section({ fn, id, html }) {
+  return `    <section class="studio-item">
+      <h3 class="studio-label">#${id} · WoDS.${fn} <a class="studio-open" data-only="${id}" href="?only=${id}">open standalone ↗</a></h3>
+${html.replace(/^/gm, '    ')}
+    </section>`;
+}
 
 // Each interactive figure is the one named by a WoDS init call.
 const initRe = /WoDS\.(\w+)\(document\.getElementById\('([^']+)'\)\);/g;
-const inits = [...src.matchAll(initRe)].map((m) => ({ fn: m[1], id: m[2] }));
+const figures = [...src.matchAll(initRe)].map((m) => ({ fn: m[1], id: m[2] }))
+  .map(({ fn, id }) => {
+    const figRe = new RegExp(
+      '<figure\\b[^>]*\\bid="' + id + '"[^>]*>[\\s\\S]*?<\\/figure>'
+    );
+    const fig = src.match(figRe);
+    if (!fig) console.warn(`!  no <figure id="${id}"> found — skipping ${fn}`);
+    return fig && { fn, id, html: fig[0] };
+  }).filter(Boolean);
 
-const sections = inits.map(({ fn, id }) => {
-  const figRe = new RegExp(
-    '<figure\\b[^>]*\\bid="' + id + '"[^>]*>[\\s\\S]*?<\\/figure>'
-  );
-  const fig = src.match(figRe);
-  if (!fig) {
-    console.warn(`!  no <figure id="${id}"> found — skipping ${fn}`);
-    return '';
-  }
-  return `    <section class="studio-item">
-      <h3 class="studio-label">#${id} · WoDS.${fn} <a class="studio-open" data-only="${id}" href="?only=${id}">open standalone ↗</a></h3>
-${fig[0].replace(/^/gm, '    ')}
-    </section>`;
-}).filter(Boolean);
+// Studio-only figures: <figure id="…" data-init="…"> blocks in studio-extras.html.
+const extrasSrc = fs.readFileSync(path.join(root, 'tools', 'studio-extras.html'), 'utf8');
+const extraRe = /<figure\b[^>]*\bid="([^"]+)"[^>]*\bdata-init="(\w+)"[^>]*>[\s\S]*?<\/figure>/g;
+const extras = [...extrasSrc.matchAll(extraRe)]
+  .map((m) => ({ fn: m[2], id: m[1], html: m[0] }));
 
-const initLines = inits.map(({ fn, id }) =>
+const all = [...figures, ...extras];
+const sections = all.map(section);
+const initLines = all.map(({ fn, id }) =>
   `      { const el = document.getElementById('${id}'); if (el) WoDS.${fn}(el); }`
 ).join('\n');
 
@@ -126,4 +152,5 @@ ${initLines}
 `;
 
 fs.writeFileSync(path.join(root, 'studio.html'), out);
-console.log(`wrote studio.html — ${inits.length} interactive figures`);
+console.log(`wrote studio.html — ${figures.length} interactive figures` +
+  ` + ${extras.length} studio-only`);

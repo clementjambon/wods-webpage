@@ -719,6 +719,100 @@
         </figure>
     </section>
 
+    <section class="studio-item">
+      <h3 class="studio-label">#pipeline-still-fig · WoDS.interactivePipelineStill <a class="studio-open" data-only="pipeline-still-fig" href="?only=pipeline-still-fig">open standalone ↗</a></h3>
+    <figure class="figure" id="pipeline-still-fig" data-init="interactivePipelineStill">
+      <div class="figure-body">
+        <div class="canvas-wrap">
+          <div class="canvas-row">
+            <div class="canvas-col">
+              <canvas width="420" height="420" class="diagram"></canvas>
+              <div class="pipeline-stage-bar">
+                <label>Pipeline stage: <span class="brush-val" data-role="stage-label">0 — Domain</span></label>
+                <input type="range" class="colormap-slider stage-slider" data-role="stage" min="0" max="4" step="1" value="0"
+                  list="pipeline-still-stage-ticks" />
+                <datalist id="pipeline-still-stage-ticks">
+                  <option value="0" label="0"></option>
+                  <option value="1" label="1"></option>
+                  <option value="2" label="2"></option>
+                  <option value="3" label="3"></option>
+                  <option value="4" label="4"></option>
+                </datalist>
+                <div class="stage-tick-labels">
+                  <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span>
+                </div>
+                <p class="stage-desc" data-role="stage-desc"></p>
+              </div>
+            </div>
+            <div class="controls">
+              <label>Neumann obstacles: <span data-role="obstacles-label">12</span></label>
+              <input type="range" data-role="obstacles" min="0" max="16" step="1" value="12" />
+    
+              <label style="margin-top:10px;">Tiles per axis T: <span data-role="tiles-label">4</span></label>
+              <input type="range" data-role="tiles" min="1" max="8" step="1" value="4" />
+    
+              <label style="margin-top:10px;">Subtile resolution B: <span data-role="sub-label">4</span></label>
+              <input type="range" data-role="sub" min="1" max="8" step="1" value="4" />
+              <div class="stat" data-role="res-label">N = T × B = 16</div>
+    
+              <!-- Index into WALK_DENSITIES = [0.25, 0.5, 0.75, 1, 2, … 8]; below 1
+                   the value is the fraction of tiles that get a single walk. -->
+              <label style="margin-top:10px;">Walks per tile (stage 2): <span data-role="wpt-label">2</span></label>
+              <input type="range" data-role="wpt" min="0" max="10" step="1" value="4" />
+    
+              <label style="margin-top:14px;">Boundary presets</label>
+              <div class="presets" data-role="presets"></div>
+    
+              <label style="margin-top:14px;">Export format</label>
+              <select data-role="format" style="width:100%;">
+                <option value="png" selected>PNG (raster)</option>
+                <option value="svg">SVG (vector)</option>
+              </select>
+    
+              <div data-role="scale-row">
+                <label style="margin-top:10px;">Export resolution: <span data-role="scale-label">4× (1680px)</span></label>
+                <input type="range" data-role="scale" min="1" max="10" step="1" value="4" />
+              </div>
+    
+              <div style="display:flex; flex-direction:column; gap:6px; margin-top:10px; font-size:0.78rem;">
+                <label style="display:flex; align-items:center; gap:6px; margin:0;">
+                  <input type="checkbox" data-role="stars" checked style="width:auto;" /> Draw star-shaped step regions
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin:0;">
+                  <input type="checkbox" data-role="alpha" style="width:auto;" /> Transparent background
+                </label>
+              </div>
+    
+              <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;">
+                <button data-role="reroll">↻ New walks</button>
+                <button data-role="export-one">⬇ This stage</button>
+                <button data-role="export-all">⬇ All 5 stages</button>
+              </div>
+    
+              <div class="legend" style="margin-top:10px;">
+                <span><i style="background:var(--color-dirichlet)"></i> Dirichlet boundary</span>
+                <span><i style="height:0; background:none; border-top:2px dashed var(--color-neumann);"></i> Neumann
+                  obstacle</span>
+                <span><i style="background:var(--color-interface)"></i> Tile interfaces</span>
+                <span><i style="background:var(--color-walk)"></i> Walk-on-Stars trajectories (start ●)</span>
+                <span><i style="background:var(--color-dirichlet)"></i> Absorption point</span>
+              </div>
+    
+              <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Still-frame twin of
+                <b>#pipeline-fig</b>, on the <b>#coedge-fig</b> geometry, for exporting slide/paper images instead of
+                video. Nothing animates: the frame is a pure function of the controls, so the export matches the preview
+                exactly. Stage&nbsp;2 draws several complete Walk-on-Stars trajectories per tile — each with its
+                star-shaped step regions, and each absorbed by the surrounding interfaces. <b>SVG</b> replays the same
+                drawing calls into vector elements; stage&nbsp;2 is the heavy one (roughly 200&nbsp;KB at the defaults,
+                growing with walks per tile).
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+    </section>
+
   <script src="js/config.js"></script>
   <script src="js/util.js"></script>
   <script src="js/laplace.js"></script>
@@ -742,6 +836,8 @@
   <script src="js/auto_markov.js"></script>
   <script src="js/references.js"></script>
   <script src="js/labels.js"></script>
+  <script src="js/svg_recorder.js"></script>
+  <script src="js/interactive_pipeline_still.js"></script>
   <script src="js/capture.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -795,6 +891,7 @@
       { const el = document.getElementById('pipeline-fig'); if (el) WoDS.interactivePipeline(el); }
       { const el = document.getElementById('tradeoff-fig'); if (el) WoDS.interactiveTradeoff(el); }
       { const el = document.getElementById('locality-fig'); if (el) WoDS.interactiveLocality(el); }
+      { const el = document.getElementById('pipeline-still-fig'); if (el) WoDS.interactivePipelineStill(el); }
     });
   </script>
 
