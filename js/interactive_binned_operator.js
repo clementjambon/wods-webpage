@@ -31,6 +31,8 @@
     const sampSlider = root.querySelector('input[data-role="samples"]');
     const sampLabel = root.querySelector('[data-role="samples-label"]');
     const precomputeBtn = root.querySelector('button[data-role="precompute"]');
+    const lineWidthSlider = root.querySelector('input[data-role="line-width"]');
+    const lineWidthLabel = root.querySelector('[data-role="line-width-label"]');
     const toggleGridBtn = root.querySelector('button[data-role="toggle-grid"]');
     const toggleKernelBtn = root.querySelector('button[data-role="toggle-kernel"]');
     const statusLabel = root.querySelector('[data-role="status"]');
@@ -48,6 +50,7 @@
     let R = parseInt(resSlider.value);     // binning resolution of the subdomain
     let Ssamp = parseInt(sampSlider.value);
     let showGrid = true;
+    let subgridWidth = lineWidthSlider ? parseFloat(lineWidthSlider.value) : 1;  // thickness of the intra-tile discretization lines
     let gridReveal = 1;   // eased 0..1 reveal of the internal subgrid
     let lastT = null;
     // Toggles the source x, the kernel histogram, and the selected-cell
@@ -334,7 +337,7 @@
       }
       opctx.save();
       opctx.strokeStyle = subgridColor;
-      opctx.lineWidth = 1;
+      opctx.lineWidth = subgridWidth;
       const m = segs.length;
       const STAGGER = 0.5;
       for (let k = 0; k < m; k++) {
@@ -461,6 +464,12 @@
         invalidate('Sample count changed — click “Precompute”.');
       });
     }
+    if (lineWidthSlider) {
+      lineWidthSlider.addEventListener('input', () => {
+        subgridWidth = parseFloat(lineWidthSlider.value);
+        if (lineWidthLabel) lineWidthLabel.textContent = subgridWidth.toFixed(1);
+      });
+    }
     if (toggleGridBtn) {
       const updateGridBtn = () => {
         toggleGridBtn.textContent = showGrid ? 'Hide subgrid' : 'Show subgrid';
@@ -489,6 +498,7 @@
     if (tileLabel) tileLabel.textContent = `${n}×${n}`;
     if (resLabel) resLabel.textContent = `${R}×${R}`;
     if (sampLabel) sampLabel.textContent = `${Ssamp}`;
+    if (lineWidthLabel) lineWidthLabel.textContent = subgridWidth.toFixed(1);
     rebuildLocalScene();
     invalidate();
     U.animLoop(root, frame);
