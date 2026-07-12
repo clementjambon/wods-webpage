@@ -15,32 +15,45 @@
     const xLabel = root.querySelector('[data-role="x-label"]');
     const eqLabel = root.querySelector('[data-role="eq-label"]');
 
-    // TEMP export hack (?ibrownexport=1): drop the bottom padding so the
-    // domain sits flush against the frame bottom, and only show walks that
-    // exit on the top/left/right (see step()). For slide trajectories.
+    // Crop the bottom padding so the domain sits flush against the frame
+    // bottom (a square canvas), for exporting slide trajectories. Enabled by
+    // ?ibrownexport=1 or, in the studio, the "Crop bottom padding" checkbox
+    // (toggling it re-runs relayout). The ?ibrownexport form additionally
+    // rejects bottom exits (see allowedSides below); the checkbox is geometry
+    // only — use the side checkboxes to pick exits.
     const EXPORT = new URLSearchParams(W.location.search).has('ibrownexport');
+    let cropped = EXPORT;
 
     // Generous padding so labels don't crop at the edges. Extra bottom
     // room reserved for the u(x) = E[u(Z_tau)] equation.
     const W0 = 380;
     const PAD = 36;
     const SIDE = W0 - 2 * PAD; // domain side length
-    // Normally 64px hold the equation overlay; in export mode ~0 (2px so
-    // the 4px boundary stroke isn't clipped) with a square domain flush
-    // to the bottom.
-    const PAD_BOTTOM = EXPORT ? 2 : 64;
-    const H0 = EXPORT ? (PAD + SIDE + PAD_BOTTOM) : 420;
-    const ctx = U.fitCanvas(canvas, W0, H0);
+    const X0 = PAD, Y0 = PAD, X1 = W0 - PAD;
+    const SW = X1 - X0;
+    const ctx = canvas.getContext('2d');
 
-    const X0 = PAD, Y0 = PAD, X1 = W0 - PAD, Y1 = H0 - PAD_BOTTOM;
-    const SW = X1 - X0, SH = Y1 - Y0;
+    // Vertical geometry depends on `cropped`; (re)assigned by relayout().
+    let PAD_BOTTOM, H0, Y1, SH, CAP_SHIFT_Y;
 
-    // The extra bottom padding holds the u(x) = E[g(Z_tau)] equation,
-    // which is an HTML overlay and so is absent from the recording. When
-    // capturing, nudge everything down by half that surplus so the square
-    // sits vertically centered in the exported frame. (No shift in export
-    // mode — the domain is already flush.)
-    const CAP_SHIFT_Y = EXPORT ? 0 : (PAD_BOTTOM - PAD) / 2;
+    // Recompute the vertical layout for the current `cropped` state and
+    // resize the canvas. Cheap and idempotent — safe to call on every toggle.
+    function relayout() {
+      // Normally 64px hold the equation overlay; cropped uses ~0 (2px so the
+      // 4px boundary stroke isn't clipped) with a square domain flush to the
+      // bottom.
+      PAD_BOTTOM = cropped ? 2 : 64;
+      H0 = cropped ? (PAD + SIDE + PAD_BOTTOM) : 420;
+      Y1 = H0 - PAD_BOTTOM;
+      SH = Y1 - Y0;
+      // The equation's bottom padding is an HTML overlay, absent from the
+      // recording; when capturing (and not cropped) nudge everything down by
+      // half that surplus so the square sits vertically centered.
+      CAP_SHIFT_Y = cropped ? 0 : (PAD_BOTTOM - PAD) / 2;
+      U.fitCanvas(canvas, W0, H0);
+      if (eqLabel) eqLabel.style.display = cropped ? 'none' : ''; // no room when cropped
+      recomputeStart();
+    }
 
     // g around the perimeter, parameterized by arc length s in [0,1).
     function gAtS(s) {
@@ -115,6 +128,7 @@
     const STUDIO = W.WoDS.inStudio;
     const dropBtn = STUDIO ? root.querySelector('[data-role="drop"]') : null;
     const clearBtn = STUDIO ? root.querySelector('[data-role="clear"]') : null;
+    const cropBtn = STUDIO ? root.querySelector('[data-role="crop"]') : null;
 
     function renderTex(el, src, fallback) {
       if (window.katex) {
@@ -127,7 +141,6 @@
     renderTex(label, 'Z_\\tau', 'Z_τ');
     renderTex(xLabel, 'x', 'x');
     renderTex(eqLabel, 'u(x) = \\mathbb{E}[g(Z_\\tau)]', 'u(x) = E[g(Z_τ)]');
-    if (EXPORT && eqLabel) eqLabel.style.display = 'none'; // no room in export mode
 
     // Overlay labels are positioned in canvas coordinate space (W0xH0),
     // but on narrow viewports CSS scales the canvas down (max-width:100%),
@@ -142,10 +155,14 @@
 
     // Static x label sits beside the start point; the hit label is placed
     // once the walk lands. Both are re-laid-out every tick so they track
-    // the canvas across viewport resizes.
-    const startScreen = uvToScreen(START[0], START[1]);
-    const xLabelPos = [startScreen[0] + 12, startScreen[1] - 10];
+    // the canvas across viewport resizes. startScreen / xLabelPos depend on
+    // the vertical geometry, so relayout() refreshes them via recomputeStart.
+    let startScreen, xLabelPos;
     let hitLabelPos = null;
+    function recomputeStart() {
+      startScreen = uvToScreen(START[0], START[1]);
+      xLabelPos = [startScreen[0] + 12, startScreen[1] - 10];
+    }
     function layoutLabels() {
       placeLabel(xLabel, xLabelPos[0], xLabelPos[1]);
       if (hitLabelPos) placeLabel(label, hitLabelPos[0], hitLabelPos[1]);
@@ -181,6 +198,13 @@
 
     if (dropBtn) dropBtn.addEventListener('click', startWalk);
     if (clearBtn) clearBtn.addEventListener('click', goIdle);
+    if (cropBtn) {
+      cropBtn.checked = cropped;
+      cropBtn.addEventListener('change', function () {
+        cropped = cropBtn.checked;
+        relayout();
+      });
+    }
 
     // Which boundary sides a walk is allowed to be absorbed on. Walks that
     // exit on a disallowed side are reject-sampled, so only the chosen exits
@@ -457,6 +481,7 @@
       syncLabelVisibility();
     }
 
+    relayout();
     if (STUDIO) goIdle(); else startWalk();
     U.animLoop(root, tick);
   }
