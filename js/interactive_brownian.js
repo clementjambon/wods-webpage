@@ -103,6 +103,11 @@
     let phase = 'idle'; // idle | walking | landed
     let landedAt = null;
     let landedT = 0;
+    // In reject-sampling mode the accepted walk is computed up front and
+    // then played back: fullTrail holds it, revealIdx tracks the playback.
+    // null in live mode (all sides allowed / export capture).
+    let fullTrail = null;
+    let revealIdx = 0;
 
     // On the public page the walk auto-plays (drop → land → pause → repeat),
     // as before. The studio adds "Drop particle" / "Clear" buttons so a walk
@@ -154,6 +159,7 @@
       phase = 'idle';
       landedAt = null;
       hitLabelPos = null;
+      fullTrail = null;
       label.style.opacity = '0';
     }
 
@@ -164,15 +170,105 @@
       landedAt = null;
       hitLabelPos = null;
       label.style.opacity = '0';
+      // With sides rejected, precompute an accepted walk instantly so the
+      // hidden search never leaves the canvas blank; playback then reveals
+      // it at the usual pace. Live mode walks stochastically as before.
+      fullTrail = rejectActive() ? precomputeAccepted() : null;
+      revealIdx = 1;
+      // No side accepts (e.g. all boxes unchecked): nothing to play back.
+      if (rejectActive() && !fullTrail) { phase = 'idle'; }
     }
 
     if (dropBtn) dropBtn.addEventListener('click', startWalk);
     if (clearBtn) clearBtn.addEventListener('click', goIdle);
 
+    // Which boundary sides a walk is allowed to be absorbed on. Walks that
+    // exit on a disallowed side are reject-sampled, so only the chosen exits
+    // are shown. Studio exposes these as four checkboxes; the ?ibrownexport
+    // hack drops the bottom edge.
+    const allowedSides = { top: true, right: true, bottom: true, left: true };
+    if (EXPORT) allowedSides.bottom = false;
+    if (STUDIO) {
+      ['top', 'right', 'bottom', 'left'].forEach(function (side) {
+        const cb = root.querySelector('[data-role="side-' + side + '"]');
+        if (!cb) return;
+        allowedSides[side] = cb.checked;
+        cb.addEventListener('change', function () { allowedSides[side] = cb.checked; });
+      });
+    }
+
+    // True while some side is disallowed, so walks are being reject-sampled.
+    // In this mode the accepted walk is precomputed and played back (see
+    // startWalk / revealStep), so the discarded search never shows. Not
+    // applied in the ?ibrownexport capture, which walks live as before.
+    function rejectActive() {
+      return !EXPORT && !(allowedSides.top && allowedSides.right &&
+        allowedSides.bottom && allowedSides.left);
+    }
+
+    // Sides crossed by a step that exited the unit square. A corner exit
+    // touches two sides; the walk is accepted if either is allowed.
+    function exitSides(nx, ny) {
+      const s = [];
+      if (ny <= 0) s.push('bottom');
+      if (ny >= 1) s.push('top');
+      if (nx <= 0) s.push('left');
+      if (nx >= 1) s.push('right');
+      return s;
+    }
+
     function gauss() {
       const u1 = Math.max(1e-9, Math.random());
       const u2 = Math.random();
       return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    }
+
+    // Simulate one full walk from the start point to its absorption, all at
+    // once. Returns the trail (including the clamped landing point) if it
+    // exits on an allowed side, or null if it should be rejected.
+    function simulateWalk() {
+      let p = START.slice();
+      const tr = [p.slice()];
+      for (let i = 0; i < 20000; i++) {
+        let nx = p[0] + gauss() * STEP;
+        let ny = p[1] + gauss() * STEP;
+        if (nx <= 0 || nx >= 1 || ny <= 0 || ny >= 1) {
+          if (!exitSides(nx, ny).some(function (s) { return allowedSides[s]; })) return null;
+          nx = Math.max(0, Math.min(1, nx));
+          ny = Math.max(0, Math.min(1, ny));
+          tr.push([nx, ny]);
+          return tr;
+        }
+        p = [nx, ny];
+        tr.push(p.slice());
+      }
+      return null; // ran away without exiting (extremely unlikely)
+    }
+
+    // Reject-sample full walks until one lands on an allowed side. Cheap:
+    // a single walk is a few hundred steps and acceptance is generous, so
+    // this returns in well under a millisecond. Bounded so an all-sides-off
+    // configuration can't spin forever.
+    function precomputeAccepted() {
+      for (let a = 0; a < 5000; a++) {
+        const tr = simulateWalk();
+        if (tr) return tr;
+      }
+      return null;
+    }
+
+    // Play back one step of the precomputed accepted walk.
+    function revealStep(t) {
+      if (!fullTrail || revealIdx >= fullTrail.length) return;
+      pos = fullTrail[revealIdx].slice();
+      trail.push(pos.slice());
+      revealIdx++;
+      if (revealIdx >= fullTrail.length) {
+        landedAt = pos.slice();
+        landedT = t;
+        phase = 'landed';
+        positionLabel();
+      }
     }
 
     // `t` is the tick clock (virtual time from U.animLoop). landedT is
@@ -185,9 +281,9 @@
       let nx = pos[0] + gauss() * STEP;
       let ny = pos[1] + gauss() * STEP;
       if (nx <= 0 || nx >= 1 || ny <= 0 || ny >= 1) {
-        // Export hack: reject walks absorbed on the bottom edge (v=0);
-        // restart from the origin so only top/left/right exits are shown.
-        if (EXPORT && ny <= 0) {
+        // Reject walks absorbed on a disallowed side; restart from the
+        // origin so only the chosen exits are shown.
+        if (!exitSides(nx, ny).some(function (s) { return allowedSides[s]; })) {
           pos = START.slice();
           trail = [pos.slice()];
           return;
@@ -228,7 +324,7 @@
     function drawTrail() {
       if (trail.length < 2) return;
       ctx.save();
-      ctx.strokeStyle = theme.walk;
+      ctx.strokeStyle = theme.textMuted;
       ctx.globalAlpha = 0.55;
       ctx.lineWidth = 1.1;
       ctx.beginPath();
@@ -340,7 +436,10 @@
       if (phase === 'walking') {
         const dt = t - lastStep;
         const n = Math.min(8, Math.max(1, Math.floor(dt / 4)));
-        for (let i = 0; i < n; i++) step(t);
+        // Reveal mode: play back a precomputed accepted walk. Live mode:
+        // step the stochastic walk directly (only used when no side is
+        // rejected, or in the export capture).
+        for (let i = 0; i < n; i++) { if (fullTrail) revealStep(t); else step(t); }
         lastStep = t;
       } else if (!STUDIO && phase === 'landed') {
         // Public page: auto-restart a new walk shortly after landing.
