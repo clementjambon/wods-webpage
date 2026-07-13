@@ -505,6 +505,49 @@
     </section>
 
     <section class="studio-item">
+      <h3 class="studio-label">#ifstates · WoDS.interactiveInterfaceStates <a class="studio-open" data-only="ifstates" href="?only=ifstates">open standalone ↗</a></h3>
+    <figure class="figure studio-only" id="ifstates">
+          <div class="figure-body">
+            <div class="canvas-wrap">
+              <div class="canvas-row" style="justify-content:center;">
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="domain"></canvas></div>
+                <div class="controls"
+                  style="flex:1 1 360px; max-width:none;">
+                  <label>Tiling resolution: <span data-role="tiles-label">4×4</span></label>
+                  <input type="range" data-role="tiles" min="2" max="12" step="1" value="4" />
+                  <label style="margin-top:14px;">Interface binning: <span data-role="res-label">4</span></label>
+                  <input type="range" data-role="res" min="1" max="12" step="1" value="4" />
+                  <label style="margin-top:14px;">State dot radius: <span data-role="node-size-label">3.0</span></label>
+                  <input type="range" data-role="node-size" min="1" max="8" step="0.5" value="3" />
+                  <label style="margin-top:14px;">Interface line width: <span data-role="line-width-label">1.5</span></label>
+                  <input type="range" data-role="line-width" min="0.5" max="4" step="0.1" value="1.5" />
+                  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;">
+                    <button data-role="toggle-states">Hide states</button>
+                    <button data-role="toggle-boundary">Show boundary states</button>
+                    <button data-role="toggle-iface">Hide interfaces</button>
+                  </div>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+                    <button data-role="export-svg">⬇ Export SVG</button>
+                    <button data-role="export-png">⬇ Export PNG</button>
+                  </div>
+                  <div class="stat" data-role="status" style="margin-top:10px;"></div>
+                  <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">The state space of the
+                    discrete interface Markov chain, over the whole $n\times n$ decomposition (no subdomain selected). Each
+                    interior interface segment is discretized into $R$ stations; their union — filtered to drop any state
+                    that lands inside a Neumann obstacle — is the chain's state space. Adjust the tiling and binning, toggle
+                    the states, and export the frame as vector (SVG) or raster (PNG).</p>
+                </div>
+              </div>
+            </div>
+            <div class="figure-caption"><b>State space of the discrete interface Markov chain.</b> The chain lives on the
+              <b>interfaces</b> of the tiling, not inside the tiles: every shared tile-edge is split into $R$ stations, and
+              the union over all interior interfaces of the $n\times n$ decomposition gives the chain's states. States that
+              fall inside a clipped Neumann obstacle are not degrees of freedom and are filtered out.</div>
+          </div>
+        </figure>
+    </section>
+
+    <section class="studio-item">
       <h3 class="studio-label">#subwalk · WoDS.interactiveSubdomainWalk <a class="studio-open" data-only="subwalk" href="?only=subwalk">open standalone ↗</a></h3>
     <figure class="figure studio-only" id="subwalk">
           <div class="figure-body">
@@ -950,6 +993,7 @@
   <script src="js/references.js"></script>
   <script src="js/labels.js"></script>
   <script src="js/svg_recorder.js"></script>
+  <script src="js/interactive_interface_states.js"></script>
   <script src="js/interactive_pipeline_still.js"></script>
   <script src="js/capture.js"></script>
   <script>
@@ -999,6 +1043,7 @@
       { const el = document.getElementById('subkernel'); if (el) WoDS.interactiveSubdomainKernel(el); }
       { const el = document.getElementById('binop'); if (el) WoDS.interactiveBinnedOperator(el); }
       { const el = document.getElementById('coedgeop'); if (el) WoDS.interactiveCoedgeOperator(el); }
+      { const el = document.getElementById('ifstates'); if (el) WoDS.interactiveInterfaceStates(el); }
       { const el = document.getElementById('coedge-fig'); if (el) WoDS.interactiveCoedge(el); }
       { const el = document.getElementById('subwalk'); if (el) WoDS.interactiveSubdomainWalk(el); }
       { const el = document.getElementById('amc-anim'); if (el) WoDS.autoMarkov(el); }
