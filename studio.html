@@ -446,6 +446,105 @@
     </section>
 
     <section class="studio-item">
+      <h3 class="studio-label">#coedgeop · WoDS.interactiveCoedgeOperator <a class="studio-open" data-only="coedgeop" href="?only=coedgeop">open standalone ↗</a></h3>
+    <figure class="figure studio-only" id="coedgeop">
+          <div class="figure-body">
+            <div class="canvas-wrap">
+              <div class="canvas-row" style="justify-content:center;">
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="decomp"></canvas></div>
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="operator"></canvas></div>
+                <div class="controls"
+                  style="flex:1 1 480px; max-width:none; display:grid; grid-template-columns:1fr 1fr; gap:0 22px; align-items:start;">
+                  <div>
+                    <label>Solver</label>
+                    <div class="solver-toggle" data-role="solver-toggle">
+                      <label><input type="radio" name="coedgeop-solver" value="wost" checked><span>WoSt</span></label>
+                      <label><input type="radio" name="coedgeop-solver" value="wos"><span>WoS</span></label>
+                    </div>
+                    <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">4×4</span></label>
+                    <input type="range" data-role="tiles" min="2" max="10" step="1" value="4" />
+                    <label style="margin-top:14px;">Interface resolution: <span data-role="res-label">4</span></label>
+                    <input type="range" data-role="res" min="2" max="10" step="1" value="4" />
+                    <label style="margin-top:14px;">Samples / station: <span data-role="samples-label">1000</span></label>
+                    <input type="range" data-role="samples" min="100" max="10000" step="100" value="1000" />
+                    <label style="margin-top:14px;">Discretization line width: <span data-role="line-width-label">1.5</span></label>
+                    <input type="range" data-role="line-width" min="0.5" max="4" step="0.1" value="1.5" />
+                  </div>
+                  <div>
+                    <button data-role="precompute">Precompute operator</button>
+                    <div data-role="progress" style="display:none; margin-top:10px;">
+                      <div style="height:8px; background:var(--color-rule); border-radius:4px; overflow:hidden;">
+                        <div data-role="progress-fill" style="height:100%; width:0%; background:var(--color-accent);"></div>
+                      </div>
+                      <div data-role="progress-text"
+                        style="font-size:0.72rem; color:var(--color-text-muted); margin-top:4px;"></div>
+                    </div>
+                    <div class="stat" data-role="status" style="margin-top:10px;">Pick a co-edge subdomain, then click “Precompute”.
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
+                      <button data-role="toggle-grid">Hide interface</button>
+                      <button data-role="toggle-kernel">Hide source &amp; kernel</button>
+                    </div>
+                    <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click near an interface on
+                      the left to choose its <b>co-edge subdomain</b> — the two tiles sharing that edge (2×1 or 1×2). Only
+                      the shared interface is discretized, into $R$ stations. Precompute each station's boundary
+                      first-passage histogram, then drag the dot along the interface to inspect each precomputed kernel.
+                      Nothing runs until you click Precompute.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="figure-caption"><b>Precomputed binned solution operator of a co-edge subdomain.</b> Pick an
+              interface (left); its co-edge subdomain — the union of the two adjacent tiles — becomes a local
+              first-passage domain (right), with the shared interface split into $R$ source stations. For each station,
+              short Monte-Carlo walks estimate the first-passage distribution over the $R$ boundary bins per edge.
+              Dragging the source dot snaps to a station and shows its precomputed kernel — the co-edge's discrete
+              interface-to-boundary solution operator, one row at a time.</div>
+          </div>
+        </figure>
+    </section>
+
+    <section class="studio-item">
+      <h3 class="studio-label">#subwalk · WoDS.interactiveSubdomainWalk <a class="studio-open" data-only="subwalk" href="?only=subwalk">open standalone ↗</a></h3>
+    <figure class="figure studio-only" id="subwalk">
+          <div class="figure-body">
+            <div class="canvas-wrap">
+              <div class="canvas-row" style="justify-content:center;">
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="decomp"></canvas></div>
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="walk"></canvas></div>
+                <div class="controls">
+                  <label>Solver</label>
+                  <div class="solver-toggle" data-role="solver-toggle">
+                    <label><input type="radio" name="subwalk-solver" value="wost" checked><span>WoSt</span></label>
+                    <label><input type="radio" name="subwalk-solver" value="wos"><span>WoS</span></label>
+                  </div>
+                  <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">4×4</span></label>
+                  <input type="range" data-role="tiles" min="2" max="10" step="1" value="4" />
+                  <label style="margin-top:14px;">Walk speed: <span data-role="speed-label">1.00×</span></label>
+                  <input type="range" data-role="speed" min="-2" max="0.5" step="0.02" value="-0.3" />
+                  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;">
+                    <button data-role="new">↻ New walk</button>
+                    <button data-role="play">⏸ Pause</button>
+                  </div>
+                  <div class="checks">
+                    <label><input type="checkbox" data-role="stars" checked> Draw star-shaped step regions</label>
+                  </div>
+                  <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click a tile on the left
+                    to pick a subdomain — its four edges become absorbing exits, interior obstacles stay Neumann. Drag the
+                    start point $x$ on the right; a walk then loops from it, drawn with its star-shaped step regions.</p>
+                </div>
+              </div>
+            </div>
+            <div class="figure-caption"><b>Walk on Stars inside a subdomain.</b> Picking one tile of the decomposition
+              (left) turns it into a local first-passage domain (right): every tile edge — physical Dirichlet wall or
+              artificial interface — is absorbing, while clipped obstacles stay Neumann. The walk hops between star-shaped
+              step regions (the disk at each point clipped by the surrounding Neumann occluders) until it is absorbed on
+              the subdomain boundary.</div>
+          </div>
+        </figure>
+    </section>
+
+    <section class="studio-item">
       <h3 class="studio-label">#coedge-fig · WoDS.interactiveCoedge <a class="studio-open" data-only="coedge-fig" href="?only=coedge-fig">open standalone ↗</a></h3>
     <figure class="figure" id="coedge-fig">
           <div class="figure-body">
@@ -840,7 +939,9 @@
   <script src="js/interactive_poisson_solution.js"></script>
   <script src="js/interactive_subdomain_kernel.js"></script>
   <script src="js/interactive_binned_operator.js"></script>
+  <script src="js/interactive_coedge_operator.js"></script>
   <script src="js/interactive_coedge.js"></script>
+  <script src="js/interactive_subdomain_walk.js"></script>
   <script src="js/interactive_markov.js"></script>
   <script src="js/interactive_pipeline.js"></script>
   <script src="js/interactive_tradeoff.js"></script>
@@ -897,7 +998,9 @@
       { const el = document.getElementById('i3b'); if (el) WoDS.interactivePoissonSolution(el); }
       { const el = document.getElementById('subkernel'); if (el) WoDS.interactiveSubdomainKernel(el); }
       { const el = document.getElementById('binop'); if (el) WoDS.interactiveBinnedOperator(el); }
+      { const el = document.getElementById('coedgeop'); if (el) WoDS.interactiveCoedgeOperator(el); }
       { const el = document.getElementById('coedge-fig'); if (el) WoDS.interactiveCoedge(el); }
+      { const el = document.getElementById('subwalk'); if (el) WoDS.interactiveSubdomainWalk(el); }
       { const el = document.getElementById('amc-anim'); if (el) WoDS.autoMarkov(el); }
       { const el = document.getElementById('imc'); if (el) WoDS.interactiveMarkov(el); }
       { const el = document.getElementById('pipeline-fig'); if (el) WoDS.interactivePipeline(el); }
