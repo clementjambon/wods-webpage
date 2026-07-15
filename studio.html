@@ -588,6 +588,48 @@
     </section>
 
     <section class="studio-item">
+      <h3 class="studio-label">#manualwalk · WoDS.interactiveManualWalk <a class="studio-open" data-only="manualwalk" href="?only=manualwalk">open standalone ↗</a></h3>
+    <figure class="figure studio-only" id="manualwalk">
+          <div class="figure-body">
+            <div class="canvas-wrap">
+              <div class="canvas-row" style="justify-content:center;">
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="decomp"></canvas></div>
+                <div class="canvas-col"><canvas width="360" height="360" class="diagram" data-role="walk"></canvas></div>
+                <div class="controls">
+                  <label>Solver</label>
+                  <div class="solver-toggle" data-role="solver-toggle">
+                    <label><input type="radio" name="manualwalk-solver" value="wost" checked><span>WoSt</span></label>
+                    <label><input type="radio" name="manualwalk-solver" value="wos"><span>WoS</span></label>
+                  </div>
+                  <label style="margin-top:14px;">Tiling resolution: <span data-role="tiles-label">4×4</span></label>
+                  <input type="range" data-role="tiles" min="2" max="10" step="1" value="4" />
+                  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;">
+                    <button data-role="undo">↶ Undo</button>
+                    <button data-role="reset">✕ Reset</button>
+                  </div>
+                  <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+                    <button data-role="export-svg">⬇ Export SVG</button>
+                  </div>
+                  <div class="checks">
+                    <label><input type="checkbox" data-role="stars" checked> Draw star-shaped step regions</label>
+                  </div>
+                  <div class="stat" data-role="status" style="margin-top:10px;"></div>
+                  <p style="font-size:0.78rem; color:var(--color-text-muted); margin-top:14px;">Click a tile on the left to
+                    pick a subdomain. On the right, click once to drop the start point $x$; its star-shaped step region
+                    appears. Each further click snaps to the current star's boundary and adds the next center, revealing its
+                    star. Click near the outer Dirichlet boundary to finish (absorb). Export the designed trajectory as SVG.</p>
+                </div>
+              </div>
+            </div>
+            <div class="figure-caption"><b>Hand-designed Walk on Stars inside a subdomain.</b> Same subdomain setup as
+              #subwalk, but the trajectory is placed by hand: every step's center is chosen on the boundary of the current
+              star-shaped step region (the disk at each point clipped by the surrounding Neumann occluders), until a center
+              lands on the absorbing Dirichlet boundary. The right pane exports to SVG for figures.</div>
+          </div>
+        </figure>
+    </section>
+
+    <section class="studio-item">
       <h3 class="studio-label">#coedge-fig · WoDS.interactiveCoedge <a class="studio-open" data-only="coedge-fig" href="?only=coedge-fig">open standalone ↗</a></h3>
     <figure class="figure" id="coedge-fig">
           <div class="figure-body">
@@ -985,6 +1027,7 @@
   <script src="js/interactive_coedge_operator.js"></script>
   <script src="js/interactive_coedge.js"></script>
   <script src="js/interactive_subdomain_walk.js"></script>
+  <script src="js/interactive_manual_walk.js"></script>
   <script src="js/interactive_markov.js"></script>
   <script src="js/interactive_pipeline.js"></script>
   <script src="js/interactive_tradeoff.js"></script>
@@ -1046,6 +1089,7 @@
       { const el = document.getElementById('ifstates'); if (el) WoDS.interactiveInterfaceStates(el); }
       { const el = document.getElementById('coedge-fig'); if (el) WoDS.interactiveCoedge(el); }
       { const el = document.getElementById('subwalk'); if (el) WoDS.interactiveSubdomainWalk(el); }
+      { const el = document.getElementById('manualwalk'); if (el) WoDS.interactiveManualWalk(el); }
       { const el = document.getElementById('amc-anim'); if (el) WoDS.autoMarkov(el); }
       { const el = document.getElementById('imc'); if (el) WoDS.interactiveMarkov(el); }
       { const el = document.getElementById('pipeline-fig'); if (el) WoDS.interactivePipeline(el); }
